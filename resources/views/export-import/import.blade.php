@@ -6,7 +6,8 @@
 
     @if(session('success'))
     <div class="mb-4 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm text-emerald-700 flex items-center gap-2">
-        <span>✅</span> {{ session('success') }}
+        <i class="ph-fill ph-check-circle text-emerald-500 text-lg shrink-0"></i>
+        {{ session('success') }}
     </div>
     @endif
 
@@ -23,7 +24,7 @@
 
     <div class="bg-white rounded-xl border border-gray-200 p-6">
         <div class="flex items-center gap-3 mb-4">
-            <span class="text-2xl">📥</span>
+            <i class="ph-bold ph-download-simple text-indigo-500 text-2xl"></i>
             <div>
                 <h3 class="font-semibold text-gray-800 text-lg">Daten importieren</h3>
                 <p class="text-sm text-gray-500">JSON-Exportdatei einlesen</p>
@@ -56,7 +57,10 @@
                         <input type="radio" name="mode" value="replace" class="mt-0.5 text-indigo-600">
                         <div>
                             <span class="text-sm font-medium text-gray-800">Ersetzen</span>
-                            <p class="text-xs text-gray-500 text-red-600">⚠ Alle bestehenden Daten werden gelöscht und durch die Import-Datei ersetzt.</p>
+                            <p class="text-xs text-gray-500 flex items-center gap-1">
+                                <i class="ph-bold ph-warning text-red-500"></i>
+                                Alle bestehenden Daten werden gelöscht und durch die Import-Datei ersetzt.
+                            </p>
                         </div>
                     </label>
                 </div>
@@ -65,14 +69,15 @@
             <button type="submit"
                     class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
                     onclick="return confirm('Import wirklich starten? Bei Modus \"Ersetzen\" gehen alle bestehenden Daten verloren.')">
-                <span>⬆</span> Import starten
+                <i class="ph-bold ph-upload-simple"></i> Import starten
             </button>
         </form>
     </div>
 
-    <div class="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-700">
-        <strong>Hinweis:</strong> Erstelle vor einem Import mit dem Modus "Ersetzen"
-        unbedingt vorher einen Export als Sicherungskopie.
+    <div class="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-700 flex items-start gap-2">
+        <i class="ph-bold ph-warning text-amber-500 text-lg shrink-0 mt-0.5"></i>
+        <span><strong>Hinweis:</strong> Erstelle vor einem Import mit dem Modus "Ersetzen"
+        unbedingt vorher einen Export als Sicherungskopie.</span>
     </div>
 </div>
 @endsection

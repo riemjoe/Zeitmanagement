@@ -5,7 +5,7 @@
 <div class="max-w-xl">
     <div class="bg-white rounded-xl border border-gray-200 p-6">
         <div class="flex items-center gap-3 mb-4">
-            <span class="text-2xl">📤</span>
+            <i class="ph-bold ph-export text-indigo-500 text-2xl"></i>
             <div>
                 <h3 class="font-semibold text-gray-800 text-lg">Daten exportieren</h3>
                 <p class="text-sm text-gray-500">Alle Daten als JSON-Datei herunterladen</p>
@@ -19,7 +19,7 @@
 
         <a href="{{ route('export-import.download') }}"
            class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors">
-            <span>⬇</span> Export herunterladen
+            <i class="ph-bold ph-download-simple"></i> Export herunterladen
         </a>
     </div>
 

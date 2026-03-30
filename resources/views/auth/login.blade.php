@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $hasPassword ? 'Anmelden' : 'Passwort einrichten' }} – Zeitmanagement</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css"/>
 </head>
 <body class="bg-gray-50 min-h-screen flex items-center justify-center">
 
@@ -13,7 +14,7 @@
     {{-- Logo / Titel --}}
     <div class="text-center mb-8">
         <div class="inline-flex items-center justify-center w-14 h-14 bg-indigo-600 rounded-2xl mb-4 shadow-lg">
-            <span class="text-white text-2xl">⏱</span>
+            <i class="ph-bold ph-timer text-white text-3xl"></i>
         </div>
         <h1 class="text-xl font-bold text-gray-900">Zeitmanagement</h1>
         <p class="text-sm text-gray-500 mt-1">

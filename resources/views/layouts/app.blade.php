@@ -7,6 +7,10 @@
     <title>@yield('title', 'Zeitmanagement') – ZeitManager</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    {{-- Phosphor Icons --}}
+    <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css"/>
     <style>
         [x-cloak] { display: none !important; }
         @media print {
@@ -17,50 +21,125 @@
 </head>
 <body class="bg-gray-50 text-gray-900 min-h-screen">
 
-<div class="flex h-screen overflow-hidden">
+<div class="flex h-screen overflow-hidden" x-data="{ sidebarOpen: false }">
+
+    {{-- Mobile Overlay --}}
+    <div x-show="sidebarOpen"
+         @click="sidebarOpen = false"
+         x-transition:enter="transition-opacity ease-linear duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition-opacity ease-linear duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-30 bg-black/50 lg:hidden"
+         x-cloak></div>
+
     {{-- Sidebar --}}
-    <aside class="w-64 bg-gray-900 text-white flex flex-col shrink-0">
-        <div class="p-5 border-b border-gray-700">
-            <h1 class="text-xl font-bold tracking-tight">⏱ ZeitManager</h1>
-            <p class="text-xs text-gray-400 mt-1">Freiberufler-Tool</p>
+    <aside class="fixed inset-y-0 left-0 z-40 w-64 bg-gray-900 text-white flex flex-col
+                  transition-transform duration-200 ease-in-out
+                  lg:relative lg:translate-x-0 lg:shrink-0"
+           :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
+
+        {{-- Logo --}}
+        <div class="p-5 border-b border-gray-700 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <span class="flex items-center justify-center w-8 h-8 bg-indigo-600 rounded-lg">
+                    <i class="ph-bold ph-timer text-white text-xl"></i>
+                </span>
+                <div>
+                    <h1 class="text-sm font-bold tracking-tight leading-tight">ZeitManager</h1>
+                    <p class="text-xs text-gray-400 leading-tight">Freiberufler-Tool</p>
+                </div>
+            </div>
+            {{-- Sidebar auf Mobile schließen --}}
+            <button @click="sidebarOpen = false"
+                    class="lg:hidden text-gray-400 hover:text-white transition-colors p-1 rounded">
+                <i class="ph-bold ph-x text-lg"></i>
+            </button>
         </div>
 
-        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+        {{-- Navigation --}}
+        <nav class="flex-1 p-3 space-y-0.5 overflow-y-auto">
             @php
                 $nav = [
-                    ['label' => 'Dashboard',       'route' => 'dashboard',           'icon' => '📊'],
-                    ['label' => 'Kunden',           'route' => 'customers.index',     'icon' => '👥'],
-                    ['label' => 'Projekte',         'route' => 'projects.index',      'icon' => '📁'],
-                    ['label' => 'Kategorien',       'route' => 'work-categories.index','icon'=> '🏷️'],
-                    ['label' => 'Zeiterfassung',    'route' => 'time-entries.index',  'icon' => '🕐'],
-                    ['label' => 'Ausgaben',         'route' => 'expenses.index',      'icon' => '💸'],
-                    ['label' => 'Rechnungen',       'route' => 'invoices.index',      'icon' => '🧾'],
-                    ['label' => 'Einstellungen',    'route' => 'settings.edit',       'icon' => '⚙️'],
-                    ['label' => 'Export',           'route' => 'export-import.export','icon' => '📤'],
-                    ['label' => 'Import',           'route' => 'export-import.import','icon' => '📥'],
+                    ['label' => 'Dashboard',       'route' => 'dashboard',            'icon' => 'ph-squares-four'],
+                    ['label' => 'Kunden',           'route' => 'customers.index',      'icon' => 'ph-users'],
+                    ['label' => 'Projekte',         'route' => 'projects.index',       'icon' => 'ph-folder'],
+                    ['label' => 'Kategorien',       'route' => 'work-categories.index','icon' => 'ph-tag'],
+                    ['label' => 'Zeiterfassung',    'route' => 'time-entries.index',   'icon' => 'ph-clock'],
+                    ['label' => 'Ausgaben',         'route' => 'expenses.index',       'icon' => 'ph-receipt'],
+                    ['label' => 'Rechnungen',       'route' => 'invoices.index',       'icon' => 'ph-file-text'],
+                    ['label' => 'Einstellungen',    'route' => 'settings.edit',        'icon' => 'ph-gear'],
+                    ['label' => 'Export',           'route' => 'export-import.export', 'icon' => 'ph-export'],
+                    ['label' => 'Import',           'route' => 'export-import.import', 'icon' => 'ph-download-simple'],
+                ];
+
+                $groups = [
+                    'Übersicht'   => ['dashboard'],
+                    'Verwaltung'  => ['customers.index', 'projects.index', 'work-categories.index'],
+                    'Erfassung'   => ['time-entries.index', 'expenses.index', 'invoices.index'],
+                    'System'      => ['settings.edit', 'export-import.export', 'export-import.import'],
                 ];
             @endphp
 
-            @foreach($nav as $item)
-                @php
-                    $base    = rtrim($item['route'], '.index');
-                    $active  = request()->routeIs($base . '*') || request()->routeIs($item['route']);
-                @endphp
-                <a href="{{ route($item['route']) }}"
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                          {{ $active ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
-                    <span class="text-base">{{ $item['icon'] }}</span>
-                    {{ $item['label'] }}
-                </a>
+            @foreach($groups as $groupLabel => $groupRoutes)
+                <p class="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-widest text-gray-500">
+                    {{ $groupLabel }}
+                </p>
+                @foreach($nav as $item)
+                    @if(in_array($item['route'], $groupRoutes))
+                        @php
+                            $base   = rtrim($item['route'], '.index');
+                            $active = request()->routeIs($base . '*') || request()->routeIs($item['route']);
+                        @endphp
+                        <a href="{{ route($item['route']) }}"
+                           @click="sidebarOpen = false"
+                           class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ $active
+                                     ? 'bg-indigo-600 text-white shadow-sm'
+                                     : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
+                            <i class="{{ $active ? 'ph-fill' : 'ph-bold' }} {{ $item['icon'] }} text-lg shrink-0"></i>
+                            {{ $item['label'] }}
+                        </a>
+                    @endif
+                @endforeach
             @endforeach
         </nav>
+
+        {{-- User-Bereich unten --}}
+        <div class="p-3 border-t border-gray-700">
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+                               text-gray-400 hover:bg-gray-800 hover:text-white transition-colors">
+                    <i class="ph-bold ph-sign-out text-lg shrink-0"></i>
+                    Abmelden
+                </button>
+            </form>
+        </div>
     </aside>
 
     {{-- Hauptbereich --}}
-    <div class="flex-1 flex flex-col overflow-hidden">
+    <div class="flex-1 flex flex-col overflow-hidden min-w-0">
+
         {{-- Topbar --}}
-        <header class="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shrink-0 gap-4">
-            <h2 class="text-lg font-semibold text-gray-800 shrink-0">@yield('title', 'Dashboard')</h2>
+        <header class="bg-white border-b border-gray-200 px-4 lg:px-6 py-3 flex items-center gap-3 shrink-0">
+
+            {{-- Hamburger (Mobile) --}}
+            <button @click="sidebarOpen = true"
+                    class="lg:hidden text-gray-500 hover:text-gray-800 transition-colors p-1.5 rounded-lg hover:bg-gray-100 shrink-0">
+                <i class="ph-bold ph-list text-xl"></i>
+            </button>
+
+            {{-- Seitenname --}}
+            <h2 class="text-base lg:text-lg font-semibold text-gray-800 shrink-0 truncate">
+                @yield('title', 'Dashboard')
+            </h2>
+
+            {{-- Spacer --}}
+            <div class="flex-1"></div>
 
             {{-- Live-Timer-Widget --}}
             @php
@@ -76,29 +155,30 @@
                     {{ $activeTimer ? "'" . addslashes($activeTimer->workCategory->name) . "'" : "''" }}
                  )"
                  x-init="init()"
-                 class="flex items-center gap-2 no-print">
+                 class="flex items-center gap-2 no-print shrink-0">
 
                 {{-- Timer läuft: Anzeige + Stop-Button --}}
                 <template x-if="running">
                     <div class="flex items-center gap-2">
-                        {{-- Pulsierender Punkt --}}
                         <span class="relative flex h-2.5 w-2.5">
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                             <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
                         </span>
-                        <div class="text-sm">
+                        <div class="text-sm hidden sm:block">
                             <span class="font-mono font-semibold text-gray-800" x-text="formatTime(elapsed)"></span>
                             <span class="text-gray-400 mx-1">·</span>
                             <span class="text-gray-600 text-xs" x-text="projectName"></span>
                         </div>
+                        <span class="font-mono font-semibold text-gray-800 text-sm sm:hidden" x-text="formatTime(elapsed)"></span>
                         {{-- Stop-Dropdown --}}
                         <div class="relative" x-data="{ open: false }">
                             <button @click="open = !open"
-                                    class="bg-red-500 hover:bg-red-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors">
-                                ⏹ Stop
+                                    class="flex items-center gap-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors">
+                                <i class="ph-bold ph-stop text-sm"></i>
+                                <span class="hidden sm:inline">Stop</span>
                             </button>
                             <div x-show="open" @click.outside="open = false" x-cloak x-transition
-                                 class="absolute right-0 top-8 z-50 bg-white border border-gray-200 rounded-xl shadow-lg p-4 w-72">
+                                 class="absolute right-0 top-9 z-50 bg-white border border-gray-200 rounded-xl shadow-lg p-4 w-72">
                                 <p class="text-xs text-gray-500 mb-2">Beschreibung (optional)</p>
                                 <textarea x-model="stopDescription" rows="2" placeholder="Was wurde gemacht?"
                                           class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 mb-3"></textarea>
@@ -121,8 +201,8 @@
                     <div class="relative" x-data="{ open: false }">
                         <button @click="open = !open"
                                 class="flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">
-                            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                            Timer starten
+                            <i class="ph-fill ph-play text-sm"></i>
+                            <span class="hidden sm:inline">Timer starten</span>
                         </button>
                         <div x-show="open" @click.outside="open = false" x-cloak x-transition
                              class="absolute right-0 top-9 z-50 bg-white border border-gray-200 rounded-xl shadow-lg p-4 w-80">
@@ -155,8 +235,8 @@
                                 </div>
                                 <button @click="startTimer(); open = false"
                                         :disabled="!startProject || !startCategory"
-                                        class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white font-medium py-2 rounded-lg text-sm transition-colors">
-                                    ▶ Timer starten
+                                        class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white font-medium py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-2">
+                                    <i class="ph-fill ph-play"></i> Timer starten
                                 </button>
                             </div>
                         </div>
@@ -164,41 +244,42 @@
                 </template>
             </div>
 
-            <div class="flex items-center gap-3 shrink-0">
+            {{-- Header-Aktionen (z.B. "+ Zeiteintrag") --}}
+            <div class="flex items-center gap-2 shrink-0">
                 @yield('header-actions')
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit"
-                            title="Abmelden"
-                            class="text-gray-400 hover:text-gray-600 transition-colors p-1.5 rounded-lg hover:bg-gray-100">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/>
-                        </svg>
-                    </button>
-                </form>
             </div>
         </header>
 
         {{-- Flash-Meldungen --}}
-        <div class="px-6 pt-4">
+        <div class="px-4 lg:px-6 pt-4">
             @if(session('success'))
                 <div x-data="{ show: true }" x-show="show" x-transition
-                     class="bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3 flex items-center justify-between mb-2">
-                    <span>✅ {{ session('success') }}</span>
-                    <button @click="show = false" class="text-green-600 hover:text-green-900">✕</button>
+                     class="bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3 flex items-center justify-between mb-2 gap-3">
+                    <span class="flex items-center gap-2 text-sm">
+                        <i class="ph-fill ph-check-circle text-green-500 text-lg shrink-0"></i>
+                        {{ session('success') }}
+                    </span>
+                    <button @click="show = false" class="text-green-600 hover:text-green-900 shrink-0">
+                        <i class="ph-bold ph-x text-base"></i>
+                    </button>
                 </div>
             @endif
             @if(session('error'))
                 <div x-data="{ show: true }" x-show="show" x-transition
-                     class="bg-red-50 border border-red-200 text-red-800 rounded-lg px-4 py-3 flex items-center justify-between mb-2">
-                    <span>❌ {{ session('error') }}</span>
-                    <button @click="show = false" class="text-red-600 hover:text-red-900">✕</button>
+                     class="bg-red-50 border border-red-200 text-red-800 rounded-lg px-4 py-3 flex items-center justify-between mb-2 gap-3">
+                    <span class="flex items-center gap-2 text-sm">
+                        <i class="ph-fill ph-x-circle text-red-500 text-lg shrink-0"></i>
+                        {{ session('error') }}
+                    </span>
+                    <button @click="show = false" class="text-red-600 hover:text-red-900 shrink-0">
+                        <i class="ph-bold ph-x text-base"></i>
+                    </button>
                 </div>
             @endif
         </div>
 
         {{-- Seiteninhalt --}}
-        <main class="flex-1 overflow-y-auto p-6">
+        <main class="flex-1 overflow-y-auto p-4 lg:p-6">
             @yield('content')
         </main>
     </div>
@@ -210,7 +291,7 @@
 function timerWidget(initialRunning, initialElapsed, initialProject, initialCategory) {
     return {
         running:          initialRunning,
-        elapsed:          initialElapsed,   // Sekunden
+        elapsed:          initialElapsed,
         projectName:      initialProject,
         categoryName:     initialCategory,
         stopDescription:  '',
@@ -247,7 +328,6 @@ function timerWidget(initialRunning, initialElapsed, initialProject, initialCate
                 this.running     = true;
                 this.projectName = res.project ?? '';
                 this._tick();
-                // Status nachladen für Projektname
                 this._refreshStatus();
             }
         },
@@ -258,7 +338,6 @@ function timerWidget(initialRunning, initialElapsed, initialProject, initialCate
             this.running         = false;
             this.elapsed         = 0;
             this.stopDescription = '';
-            // Seite neu laden damit Zeiteintragsliste aktuell ist
             window.location.reload();
         },
 
