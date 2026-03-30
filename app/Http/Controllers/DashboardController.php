@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Expense;
+use App\Models\Invoice;
 use App\Models\Project;
 use App\Models\TimeEntry;
-use App\Models\Invoice;
 
 class DashboardController extends Controller
 {
@@ -29,6 +30,44 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-        return view('dashboard.index', compact('stats', 'recentEntries'));
+        // ── Monatliche Chart-Daten (letzte 12 Monate) ─────────────────────
+        $chartLabels  = [];
+        $chartHours   = [];
+        $chartIncome  = [];
+        $chartExpenses = [];
+
+        for ($i = 11; $i >= 0; $i--) {
+            $month = now()->startOfMonth()->subMonths($i);
+            $m     = $month->month;
+            $y     = $month->year;
+
+            $chartLabels[] = $month->translatedFormat('M Y');
+
+            // Stunden
+            $chartHours[] = (float) TimeEntry::whereMonth('date', $m)
+                ->whereYear('date', $y)
+                ->sum('hours');
+
+            // Einnahmen: Zeiteinträge dieses Monats × Stundenlohn (ohne Rechnung)
+            $monthEntries = TimeEntry::with('project')
+                ->whereMonth('date', $m)
+                ->whereYear('date', $y)
+                ->get();
+            $chartIncome[] = round($monthEntries->sum('amount'), 2);
+
+            // Ausgaben
+            $chartExpenses[] = (float) Expense::whereMonth('date', $m)
+                ->whereYear('date', $y)
+                ->sum('amount');
+        }
+
+        $chartData = [
+            'labels'   => $chartLabels,
+            'hours'    => $chartHours,
+            'income'   => $chartIncome,
+            'expenses' => $chartExpenses,
+        ];
+
+        return view('dashboard.index', compact('stats', 'recentEntries', 'chartData'));
     }
 }

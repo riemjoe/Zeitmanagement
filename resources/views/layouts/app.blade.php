@@ -36,15 +36,19 @@
                     ['label' => 'Ausgaben',         'route' => 'expenses.index',      'icon' => '💸'],
                     ['label' => 'Rechnungen',       'route' => 'invoices.index',      'icon' => '🧾'],
                     ['label' => 'Einstellungen',    'route' => 'settings.edit',       'icon' => '⚙️'],
+                    ['label' => 'Export',           'route' => 'export-import.export','icon' => '📤'],
+                    ['label' => 'Import',           'route' => 'export-import.import','icon' => '📥'],
                 ];
             @endphp
 
             @foreach($nav as $item)
+                @php
+                    $base    = rtrim($item['route'], '.index');
+                    $active  = request()->routeIs($base . '*') || request()->routeIs($item['route']);
+                @endphp
                 <a href="{{ route($item['route']) }}"
                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                          {{ request()->routeIs(rtrim($item['route'], '.index') . '*')
-                             ? 'bg-indigo-600 text-white'
-                             : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
+                          {{ $active ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
                     <span class="text-base">{{ $item['icon'] }}</span>
                     {{ $item['label'] }}
                 </a>

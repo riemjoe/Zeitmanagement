@@ -11,6 +11,7 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\TimerController;
+use App\Http\Controllers\ExportImportController;
 
 // Authentifizierung (ungeschützt)
 Route::get('/login',  [AuthController::class, 'showLogin'])->name('login');
@@ -52,6 +53,12 @@ Route::middleware('auth.simple')->group(function () {
     Route::get('/settings',  [SettingController::class, 'edit'])->name('settings.edit');
     Route::put('/settings',  [SettingController::class, 'update'])->name('settings.update');
     Route::post('/settings/password', [SettingController::class, 'updatePassword'])->name('settings.password');
+
+    // Export / Import
+    Route::get('/export',          [ExportImportController::class, 'showExport'])->name('export-import.export');
+    Route::get('/export/download', [ExportImportController::class, 'export'])->name('export-import.download');
+    Route::get('/import',          [ExportImportController::class, 'showImport'])->name('export-import.import');
+    Route::post('/import',         [ExportImportController::class, 'import'])->name('export-import.import.post');
 
     // Live-Timer
     Route::get('/timer/status',  [TimerController::class, 'status'])->name('timer.status');
