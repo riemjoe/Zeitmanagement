@@ -58,6 +58,24 @@
             </div>
         </div>
 
+        {{-- Optionaler Projektfilter --}}
+        <div class="bg-white rounded-xl border border-gray-200 p-6 mb-4" x-show="customerId && allProjects.length > 1">
+            <h3 class="font-semibold text-gray-700 border-b pb-2 mb-4">Projektfilter <span class="font-normal text-gray-400 text-xs">(optional)</span></h3>
+            <div class="flex items-center gap-3">
+                <select x-model="projectFilter"
+                        class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 min-w-[220px]">
+                    <option value="">– Alle Projekte –</option>
+                    <template x-for="p in allProjects" :key="p.id">
+                        <option :value="p.id" x-text="p.name"></option>
+                    </template>
+                </select>
+                <button type="button" x-show="projectFilter" @click="projectFilter = ''"
+                        class="text-xs text-gray-400 hover:text-gray-700 underline">
+                    Filter aufheben
+                </button>
+            </div>
+        </div>
+
         {{-- Zeiteinträge auswählen --}}
         <div class="bg-white rounded-xl border border-gray-200 p-6 mb-4" x-show="customerId">
             <h3 class="font-semibold text-gray-700 border-b pb-2 mb-4">
@@ -69,17 +87,17 @@
                 <p class="text-sm text-red-500 py-3 px-4 bg-red-50 rounded-lg" x-text="'Fehler: ' + loadError"></p>
             </template>
 
-            <template x-if="!loading && !loadError && timeEntries.length === 0">
-                <p class="text-sm text-gray-400 py-4 text-center">Keine nicht-abgerechneten Zeiteinträge für diesen Kunden.</p>
+            <template x-if="!loading && !loadError && filteredTimeEntries.length === 0">
+                <p class="text-sm text-gray-400 py-4 text-center">Keine nicht-abgerechneten Zeiteinträge für diesen Kunden<span x-show="projectFilter"> / dieses Projekt</span>.</p>
             </template>
 
-            <div class="space-y-1" x-show="!loading && timeEntries.length > 0">
+            <div class="space-y-1" x-show="!loading && filteredTimeEntries.length > 0">
                 <div class="flex gap-2 mb-2">
                     <button type="button" @click="selectAll('time')" class="text-xs text-indigo-600 hover:underline">Alle auswählen</button>
                     <span class="text-xs text-gray-300">|</span>
                     <button type="button" @click="deselectAll('time')" class="text-xs text-gray-400 hover:underline">Keine</button>
                 </div>
-                <template x-for="entry in timeEntries" :key="entry.id">
+                <template x-for="entry in filteredTimeEntries" :key="entry.id">
                     <label class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer border border-transparent"
                            :class="selectedTimeEntries.includes(entry.id) ? 'border-indigo-200 bg-indigo-50' : ''">
                         <input type="checkbox" name="time_entry_ids[]" :value="entry.id"
@@ -100,7 +118,7 @@
         </div>
 
         {{-- Ausgaben auswählen --}}
-        <div class="bg-white rounded-xl border border-gray-200 p-6 mb-4" x-show="customerId && expenses.length > 0">
+        <div class="bg-white rounded-xl border border-gray-200 p-6 mb-4" x-show="customerId && filteredExpenses.length > 0">
             <h3 class="font-semibold text-gray-700 border-b pb-2 mb-4">Ausgaben auswählen</h3>
             <div class="space-y-1">
                 <div class="flex gap-2 mb-2">
@@ -108,7 +126,7 @@
                     <span class="text-xs text-gray-300">|</span>
                     <button type="button" @click="deselectAll('expense')" class="text-xs text-gray-400 hover:underline">Keine</button>
                 </div>
-                <template x-for="expense in expenses" :key="expense.id">
+                <template x-for="expense in filteredExpenses" :key="expense.id">
                     <label class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer border border-transparent"
                            :class="selectedExpenses.includes(expense.id) ? 'border-indigo-200 bg-indigo-50' : ''">
                         <input type="checkbox" name="expense_ids[]" :value="expense.id"
@@ -186,6 +204,8 @@
 function invoiceForm() {
     return {
         customerId: '',
+        projectFilter: '',
+        allProjects: [],
         loading: false,
         timeEntries: [],
         expenses: [],
@@ -193,6 +213,14 @@ function invoiceForm() {
         selectedExpenses: [],
         serviceDescription: '',
 
+        get filteredTimeEntries() {
+            if (!this.projectFilter) return this.timeEntries;
+            return this.timeEntries.filter(e => String(e.project_id) === String(this.projectFilter));
+        },
+        get filteredExpenses() {
+            if (!this.projectFilter) return this.expenses;
+            return this.expenses.filter(e => String(e.project_id) === String(this.projectFilter));
+        },
         get selectedTimeNet() {
             return this.timeEntries
                 .filter(e => this.selectedTimeEntries.includes(e.id))
@@ -212,13 +240,15 @@ function invoiceForm() {
             this.loadError = '';
             this.timeEntries = [];
             this.expenses = [];
+            this.allProjects = [];
+            this.projectFilter = '';
             this.selectedTimeEntries = [];
             this.selectedExpenses = [];
             try {
                 const res = await fetch(`/invoices/billable-items?customer_id=${this.customerId}`, {
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'Accept': 'application/json',   // ← damit Laravel JSON statt Redirect liefert
+                        'Accept': 'application/json',
                     }
                 });
                 if (!res.ok) {
@@ -227,8 +257,9 @@ function invoiceForm() {
                     return;
                 }
                 const data = await res.json();
-                this.timeEntries = data.time_entries  ?? [];
-                this.expenses    = data.expenses      ?? [];
+                this.timeEntries = data.time_entries ?? [];
+                this.expenses    = data.expenses     ?? [];
+                this.allProjects = data.projects     ?? [];
                 // Alles vorauswählen
                 this.selectedTimeEntries = this.timeEntries.map(e => e.id);
                 this.selectedExpenses    = this.expenses.map(e => e.id);
@@ -249,8 +280,8 @@ function invoiceForm() {
             else this.selectedExpenses.splice(i, 1);
         },
         selectAll(type) {
-            if (type === 'time') this.selectedTimeEntries = this.timeEntries.map(e => e.id);
-            else this.selectedExpenses = this.expenses.map(e => e.id);
+            if (type === 'time') this.selectedTimeEntries = this.filteredTimeEntries.map(e => e.id);
+            else this.selectedExpenses = this.filteredExpenses.map(e => e.id);
         },
         deselectAll(type) {
             if (type === 'time') this.selectedTimeEntries = [];

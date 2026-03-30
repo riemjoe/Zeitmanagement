@@ -30,6 +30,7 @@ class TimerController extends Controller
             'customer'     => $timer->project->customer->name,
             'category'     => $timer->workCategory->name,
             'description'  => $timer->description ?? '',
+            'hourly_rate'  => $timer->project->effective_hourly_rate,
         ]);
     }
 
@@ -54,11 +55,18 @@ class TimerController extends Controller
             'description'      => $data['description'] ?? null,
         ]);
 
+        $timer->load(['project.customer', 'workCategory']);
+
         return response()->json([
-            'running'    => true,
-            'id'         => $timer->id,
-            'started_at' => $timer->started_at->toISOString(),
-            'elapsed_s'  => 0,
+            'running'     => true,
+            'id'          => $timer->id,
+            'started_at'  => $timer->started_at->toISOString(),
+            'elapsed_s'   => 0,
+            'project'     => $timer->project->name,
+            'customer'    => $timer->project->customer->name,
+            'category'    => $timer->workCategory->name,
+            'description' => $timer->description ?? '',
+            'hourly_rate' => $timer->project->effective_hourly_rate,
         ]);
     }
 

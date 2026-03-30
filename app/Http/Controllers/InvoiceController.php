@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Expense;
 use App\Models\Invoice;
+use App\Models\Project;
 use App\Models\Setting;
 use App\Models\TimeEntry;
 use Illuminate\Http\Request;
@@ -47,6 +48,7 @@ class InvoiceController extends Controller
                 'id'          => $e->id,
                 'date'        => $e->date->format('d.m.Y'),
                 'project'     => $e->project->name,
+                'project_id'  => $e->project_id,
                 'category'    => $e->workCategory->name,
                 'hours'       => (float) $e->hours,
                 'amount'      => round($e->amount, 2),
@@ -63,14 +65,24 @@ class InvoiceController extends Controller
                 'id'          => $e->id,
                 'date'        => $e->date->format('d.m.Y'),
                 'project'     => $e->project->name,
+                'project_id'  => $e->project_id,
                 'category'    => $e->category ?? '',
                 'amount'      => (float) $e->amount,
                 'description' => $e->description,
             ]);
 
+        // Projekte mit abrechnbaren Einträgen für diesen Kunden
+        $projectIds = $timeEntries->pluck('project_id')
+            ->merge($expenses->pluck('project_id'))
+            ->unique()->filter()->values();
+        $projects = Project::whereIn('id', $projectIds)
+            ->orderBy('name')->get()
+            ->map(fn ($p) => ['id' => $p->id, 'name' => $p->name]);
+
         return response()->json([
             'time_entries' => $timeEntries->values(),
             'expenses'     => $expenses->values(),
+            'projects'     => $projects->values(),
         ]);
     }
 

@@ -143,7 +143,7 @@
 
             {{-- Live-Timer-Widget --}}
             @php
-                $activeTimer   = \App\Models\Timer::with(['project', 'workCategory'])->first();
+                $activeTimer   = \App\Models\Timer::with(['project.customer', 'workCategory'])->first();
                 $allProjects   = \App\Models\Project::with('customer')->where('status','active')->orderBy('name')->get();
                 $allCategories = \App\Models\WorkCategory::orderBy('name')->get();
             @endphp
@@ -152,7 +152,10 @@
                     {{ $activeTimer ? 'true' : 'false' }},
                     {{ $activeTimer ? $activeTimer->elapsed_seconds : 0 }},
                     {{ $activeTimer ? "'" . addslashes($activeTimer->project->name) . "'" : "''" }},
-                    {{ $activeTimer ? "'" . addslashes($activeTimer->workCategory->name) . "'" : "''" }}
+                    {{ $activeTimer ? "'" . addslashes($activeTimer->workCategory->name) . "'" : "''" }},
+                    {{ $activeTimer ? "'" . addslashes($activeTimer->project->customer->name) . "'" : "''" }},
+                    {{ $activeTimer ? $activeTimer->project->effective_hourly_rate : 0 }},
+                    {{ $activeTimer ? "'" . addslashes($activeTimer->description ?? '') . "'" : "''" }}
                  )"
                  x-init="init()"
                  class="flex items-center gap-2 no-print shrink-0">
@@ -170,6 +173,12 @@
                             <span class="text-gray-600 text-xs" x-text="projectName"></span>
                         </div>
                         <span class="font-mono font-semibold text-gray-800 text-sm sm:hidden" x-text="formatTime(elapsed)"></span>
+                        {{-- Vollbild-Button --}}
+                        <button @click="showOverlay = true"
+                                class="text-gray-400 hover:text-indigo-600 transition-colors p-1 rounded"
+                                title="Live-Ansicht öffnen">
+                            <i class="ph-bold ph-arrows-out text-base"></i>
+                        </button>
                         {{-- Stop-Dropdown --}}
                         <div class="relative" x-data="{ open: false }">
                             <button @click="open = !open"
@@ -242,6 +251,101 @@
                         </div>
                     </div>
                 </template>
+
+            {{-- Live-Tracking Vollbild-Overlay (x-teleport hält es im timerWidget-Scope, rendert aber am body) --}}
+            <template x-teleport="body">
+                <div x-show="showOverlay" x-cloak
+                     x-transition:enter="transition ease-out duration-200"
+                     x-transition:enter-start="opacity-0 scale-95"
+                     x-transition:enter-end="opacity-100 scale-100"
+                     x-transition:leave="transition ease-in duration-150"
+                     x-transition:leave-start="opacity-100 scale-100"
+                     x-transition:leave-end="opacity-0 scale-95"
+                     class="fixed inset-0 z-[9998] flex flex-col items-center justify-center no-print"
+                     style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);">
+
+                    {{-- Schließen --}}
+                    <button @click="showOverlay = false"
+                            class="absolute top-5 right-5 text-gray-500 hover:text-white transition-colors p-2 rounded-xl hover:bg-white/10">
+                        <i class="ph-bold ph-arrows-in text-2xl"></i>
+                    </button>
+
+                    {{-- Pulsierender Indikator --}}
+                    <div class="flex items-center gap-2 mb-6">
+                        <span class="relative flex h-3 w-3">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                        </span>
+                        <span class="text-gray-400 text-sm font-medium uppercase tracking-widest">Live Tracking</span>
+                    </div>
+
+                    {{-- Große Uhr --}}
+                    <div class="font-mono font-bold text-white tracking-tight mb-2"
+                         style="font-size: clamp(3rem, 10vw, 7rem); line-height: 1;"
+                         x-text="formatTime(elapsed)"></div>
+
+                    {{-- Erzielter Gewinn --}}
+                    <div class="font-bold text-emerald-400 mb-8"
+                         style="font-size: clamp(1.5rem, 4vw, 3rem);"
+                         x-text="formatMoney(elapsed / 3600 * hourlyRate) + ' €'"></div>
+
+                    {{-- Infokarten --}}
+                    <div class="grid grid-cols-2 gap-3 max-w-lg w-full px-6 mb-6">
+                        <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+                            <p class="text-gray-500 text-xs uppercase tracking-widest mb-1">Projekt</p>
+                            <p class="text-white font-semibold truncate" x-text="projectName"></p>
+                        </div>
+                        <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+                            <p class="text-gray-500 text-xs uppercase tracking-widest mb-1">Kunde</p>
+                            <p class="text-white font-semibold truncate" x-text="customerName"></p>
+                        </div>
+                        <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+                            <p class="text-gray-500 text-xs uppercase tracking-widest mb-1">Kategorie</p>
+                            <p class="text-white font-semibold truncate" x-text="categoryName"></p>
+                        </div>
+                        <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+                            <p class="text-gray-500 text-xs uppercase tracking-widest mb-1">Stundensatz</p>
+                            <p class="text-white font-semibold" x-text="formatMoney(hourlyRate) + ' €/h'"></p>
+                        </div>
+                    </div>
+
+                    {{-- Beschreibung --}}
+                    <p class="text-gray-500 text-sm italic mb-8 max-w-md text-center px-6"
+                       x-text="timerDescription || 'Keine Beschreibung'"></p>
+
+                    {{-- Stop-Bereich --}}
+                    <div class="flex flex-col items-center gap-3 w-full max-w-xs px-6"
+                         x-data="{ overlayStopOpen: false }">
+                        <template x-if="!overlayStopOpen">
+                            <button @click="overlayStopOpen = true"
+                                    class="w-full flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white font-semibold py-3 rounded-xl transition-colors text-sm">
+                                <i class="ph-bold ph-stop text-base"></i> Stoppen &amp; Speichern
+                            </button>
+                        </template>
+                        <template x-if="overlayStopOpen">
+                            <div class="w-full space-y-3">
+                                <p class="text-gray-400 text-xs text-center">Beschreibung (optional)</p>
+                                <textarea x-model="stopDescription" rows="2" placeholder="Was wurde gemacht?"
+                                          class="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-red-400"></textarea>
+                                <div class="flex gap-2">
+                                    <button @click="stopTimer()"
+                                            class="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2 rounded-xl text-sm transition-colors">
+                                        Speichern &amp; Stop
+                                    </button>
+                                    <button @click="overlayStopOpen = false"
+                                            class="text-gray-500 hover:text-gray-300 text-sm px-3 transition-colors">
+                                        Zurück
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                        <button @click="cancelTimer()"
+                                class="text-gray-600 hover:text-gray-400 text-xs transition-colors">
+                            Timer verwerfen
+                        </button>
+                    </div>
+                </div>
+            </template>
             </div>
 
             {{-- Header-Aktionen (z.B. "+ Zeiteintrag") --}}
@@ -288,12 +392,17 @@
 @stack('scripts')
 
 <script>
-function timerWidget(initialRunning, initialElapsed, initialProject, initialCategory) {
+function timerWidget(initialRunning, initialElapsed, initialProject, initialCategory,
+                     initialCustomer, initialHourlyRate, initialDescription) {
     return {
         running:          initialRunning,
         elapsed:          initialElapsed,
         projectName:      initialProject,
         categoryName:     initialCategory,
+        customerName:     initialCustomer      ?? '',
+        hourlyRate:       initialHourlyRate    ?? 0,
+        timerDescription: initialDescription  ?? '',
+        showOverlay:      false,
         stopDescription:  '',
         startProject:     '',
         startCategory:    '',
@@ -316,6 +425,10 @@ function timerWidget(initialRunning, initialElapsed, initialProject, initialCate
             return [h, m, sc].map(v => String(v).padStart(2, '0')).join(':');
         },
 
+        formatMoney(val) {
+            return Number(val).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
+
         async startTimer() {
             if (!this.startProject || !this.startCategory) return;
             const res = await this._post('/timer/start', {
@@ -324,11 +437,14 @@ function timerWidget(initialRunning, initialElapsed, initialProject, initialCate
                 description:      this.startDescription,
             });
             if (res.running) {
-                this.elapsed     = 0;
-                this.running     = true;
-                this.projectName = res.project ?? '';
+                this.elapsed          = 0;
+                this.running          = true;
+                this.projectName      = res.project      ?? '';
+                this.customerName     = res.customer     ?? '';
+                this.categoryName     = res.category     ?? '';
+                this.hourlyRate       = res.hourly_rate  ?? 0;
+                this.timerDescription = res.description  ?? '';
                 this._tick();
-                this._refreshStatus();
             }
         },
 
@@ -337,6 +453,7 @@ function timerWidget(initialRunning, initialElapsed, initialProject, initialCate
             clearInterval(this._interval);
             this.running         = false;
             this.elapsed         = 0;
+            this.showOverlay     = false;
             this.stopDescription = '';
             window.location.reload();
         },
@@ -344,19 +461,9 @@ function timerWidget(initialRunning, initialElapsed, initialProject, initialCate
         async cancelTimer() {
             await this._post('/timer/cancel', {});
             clearInterval(this._interval);
-            this.running = false;
-            this.elapsed = 0;
-        },
-
-        async _refreshStatus() {
-            try {
-                const res  = await fetch('/timer/status', { headers: { 'Accept': 'application/json' } });
-                const data = await res.json();
-                if (data.running) {
-                    this.projectName  = data.project  ?? '';
-                    this.categoryName = data.category ?? '';
-                }
-            } catch (_) {}
+            this.running     = false;
+            this.elapsed     = 0;
+            this.showOverlay = false;
         },
 
         async _post(url, body) {

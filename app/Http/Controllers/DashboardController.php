@@ -48,12 +48,13 @@ class DashboardController extends Controller
                 ->whereYear('date', $y)
                 ->sum('hours');
 
-            // Einnahmen: Zeiteinträge dieses Monats × Stundenlohn (ohne Rechnung)
-            $monthEntries = TimeEntry::with('project')
+            // Einnahmen: Rechnungsbetrag (Brutto) der Rechnungen dieses Monats
+            $monthInvoices = Invoice::with(['timeEntries.project', 'expenses'])
                 ->whereMonth('date', $m)
                 ->whereYear('date', $y)
+                ->where('status', '!=', 'cancelled')
                 ->get();
-            $chartIncome[] = round($monthEntries->sum('amount'), 2);
+            $chartIncome[] = round($monthInvoices->sum('gross_total'), 2);
 
             // Ausgaben
             $chartExpenses[] = (float) Expense::whereMonth('date', $m)
