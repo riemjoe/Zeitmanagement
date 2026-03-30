@@ -141,6 +141,9 @@
         <div class="item"><span>Gültig bis</span><strong>{{ $quote->valid_until->format('d.m.Y') }}</strong></div>
         @endif
         <div class="item"><span>Stundensatz</span><strong>{{ number_format($quote->effective_hourly_rate, 2, ',', '.') }} €/h</strong></div>
+        @if((float)$quote->buffer_percent > 0)
+        <div class="item"><span>Puffer</span><strong>{{ number_format($quote->buffer_percent, 0) }}%</strong></div>
+        @endif
     </div>
 
     {{-- Betreff --}}
@@ -209,6 +212,16 @@
 
     {{-- Kalkulations-Zusammenfassung --}}
     <div class="calc-box">
+        @if((float)$quote->buffer_percent > 0)
+        <div class="calc-row sub" style="font-size:11px;color:#9ca3af">
+            <span>Features ({{ number_format($quote->raw_hours,2,',','.') }} h)</span>
+            <span>{{ number_format($quote->raw_hours * $quote->effective_hourly_rate, 2, ',', '.') }} €</span>
+        </div>
+        <div class="calc-row sub" style="font-size:11px;color:#d97706">
+            <span>+ Puffer {{ number_format($quote->buffer_percent,0) }}%</span>
+            <span>+{{ number_format(($quote->total_hours - $quote->raw_hours) * $quote->effective_hourly_rate, 2, ',', '.') }} €</span>
+        </div>
+        @endif
         <div class="calc-row">
             <span>Zwischensumme (Netto)</span>
             <span>{{ number_format($quote->subtotal, 2, ',', '.') }} €</span>

@@ -23,6 +23,11 @@ class Customer extends Model
         return $this->hasMany(Invoice::class);
     }
 
+    public function contracts(): HasMany
+    {
+        return $this->hasMany(Contract::class);
+    }
+
     /**
      * Vollständige Adresse als String.
      */

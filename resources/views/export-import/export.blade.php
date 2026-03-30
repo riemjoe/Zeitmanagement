@@ -12,10 +12,20 @@
             </div>
         </div>
 
-        <p class="text-sm text-gray-600 mb-6">
-            Der Export enthält alle Kunden, Projekte, Arbeitskategorien, Zeiteinträge,
-            Ausgaben und Rechnungen. Die Datei kann jederzeit wieder importiert werden.
+        <p class="text-sm text-gray-600 mb-4">
+            Die Datei kann jederzeit wieder importiert werden.
         </p>
+        <ul class="text-sm text-gray-500 space-y-1 mb-6">
+            @foreach([
+                'Kunden', 'Projekte', 'Arbeitskategorien', 'Zeiteinträge',
+                'Ausgaben', 'Rechnungen', 'Angebote & Features',
+                'Vertragsvorlagen', 'Verträge',
+            ] as $item)
+            <li class="flex items-center gap-2">
+                <i class="ph-bold ph-check text-green-500 text-xs"></i> {{ $item }}
+            </li>
+            @endforeach
+        </ul>
 
         <a href="{{ route('export-import.download') }}"
            class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors">

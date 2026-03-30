@@ -41,6 +41,7 @@ class QuoteController extends Controller
             'lines_per_hour' => 'required|integer|min:1',
             'tax_rate'       => 'required|numeric|min:0|max:100',
             'discount'       => 'nullable|numeric|min:0',
+            'buffer_percent' => 'nullable|numeric|min:0|max:100',
             'notes'          => 'nullable|string',
             // Features als Array
             'features'              => 'nullable|array',
@@ -63,6 +64,7 @@ class QuoteController extends Controller
             'lines_per_hour' => $data['lines_per_hour'],
             'tax_rate'       => $data['tax_rate'],
             'discount'       => $data['discount'] ?? 0,
+            'buffer_percent' => $data['buffer_percent'] ?? 0,
             'notes'          => $data['notes'] ?? null,
             'sender_snapshot'=> $settings,
         ]);
@@ -111,6 +113,7 @@ class QuoteController extends Controller
             'lines_per_hour' => 'required|integer|min:1',
             'tax_rate'       => 'required|numeric|min:0|max:100',
             'discount'       => 'nullable|numeric|min:0',
+            'buffer_percent' => 'nullable|numeric|min:0|max:100',
             'notes'          => 'nullable|string',
             'features'              => 'nullable|array',
             'features.*.name'         => 'required_with:features|string|max:255',
@@ -129,6 +132,7 @@ class QuoteController extends Controller
             'lines_per_hour' => $data['lines_per_hour'],
             'tax_rate'       => $data['tax_rate'],
             'discount'       => $data['discount'] ?? 0,
+            'buffer_percent' => $data['buffer_percent'] ?? 0,
             'notes'          => $data['notes'] ?? null,
         ]);
 

@@ -37,7 +37,7 @@ class CustomerController extends Controller
 
     public function show(Customer $customer)
     {
-        $customer->load(['projects.timeEntries', 'projects.expenses', 'invoices']);
+        $customer->load(['projects.timeEntries', 'projects.expenses', 'invoices', 'contracts.template']);
         return view('customers.show', compact('customer'));
     }
 

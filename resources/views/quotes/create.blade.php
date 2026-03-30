@@ -71,6 +71,15 @@
                    value="50" min="1" required
                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
         </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+                Puffer (%)
+                <span class="text-gray-400 font-normal text-xs">Aufschlag auf Gesamtstunden</span>
+            </label>
+            <input type="number" name="buffer_percent" x-model.number="bufferPercent"
+                   value="0" min="0" max="100" step="1"
+                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
     </div>
     <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Notizen / Anmerkungen</label>
@@ -150,9 +159,9 @@
             </tbody>
             <tfoot x-show="features.length > 0">
                 <tr class="border-t-2 border-gray-200 font-semibold text-sm">
-                    <td colspan="4" class="pt-3 text-right text-gray-600">Gesamt</td>
-                    <td class="pt-3 text-right" x-text="totalHours.toFixed(2).replace('.', ',') + ' h'"></td>
-                    <td class="pt-3 text-right" x-text="formatMoney(subtotal) + ' €'"></td>
+                    <td colspan="4" class="pt-3 text-right text-gray-600">Summe Features</td>
+                    <td class="pt-3 text-right" x-text="rawHours.toFixed(2).replace('.', ',') + ' h'"></td>
+                    <td class="pt-3 text-right" x-text="formatMoney(rawHours * hourlyRateEffective) + ' €'"></td>
                     <td></td>
                 </tr>
             </tfoot>
@@ -165,7 +174,15 @@
     <h3 class="font-semibold text-gray-700 border-b pb-2 mb-4">Kalkulation</h3>
     <div class="text-sm space-y-1 max-w-xs ml-auto">
         <div class="flex justify-between text-gray-600">
-            <span>Arbeitsaufwand</span>
+            <span>Arbeitsaufwand (Features)</span>
+            <span x-text="rawHours.toFixed(2).replace('.', ',') + ' h'"></span>
+        </div>
+        <div class="flex justify-between text-amber-600 text-xs" x-show="bufferPercent > 0">
+            <span x-text="'+ Puffer (' + bufferPercent + '%)'"></span>
+            <span x-text="bufferHours.toFixed(2).replace('.', ',') + ' h'"></span>
+        </div>
+        <div class="flex justify-between text-gray-700 font-medium" x-show="bufferPercent > 0">
+            <span>Gesamt inkl. Puffer</span>
             <span x-text="totalHours.toFixed(2).replace('.', ',') + ' h'"></span>
         </div>
         <div class="flex justify-between font-semibold border-t pt-1 mt-1">
@@ -207,16 +224,23 @@ function quoteForm(existingFeatures) {
         linesPerHour:  50,
         taxRate:       {{ $defaultTax }},
         discount:      0,
+        bufferPercent: 0,
         _counter:      existingFeatures ? existingFeatures.length : 0,
 
         get hourlyRateEffective() {
             return this.hourlyRate || {{ $defaultRate }};
         },
-        get totalHours() {
+        get rawHours() {
             return this.features.reduce((s, f) => s + this.effectiveHours(f), 0);
         },
+        get bufferHours() {
+            return this.rawHours * ((this.bufferPercent || 0) / 100);
+        },
+        get totalHours() {
+            return this.rawHours + this.bufferHours;
+        },
         get subtotal() {
-            return Math.max(0, this.totalHours * this.hourlyRateEffective - 0);
+            return Math.max(0, this.totalHours * this.hourlyRateEffective);
         },
         get netTotal() {
             return Math.max(0, this.subtotal - (this.discount || 0));

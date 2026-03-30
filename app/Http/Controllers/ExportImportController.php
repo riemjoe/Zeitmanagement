@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Contract;
+use App\Models\ContractTemplate;
 use App\Models\Customer;
 use App\Models\Expense;
 use App\Models\Invoice;
 use App\Models\Project;
+use App\Models\Quote;
+use App\Models\QuoteFeature;
 use App\Models\TimeEntry;
 use App\Models\WorkCategory;
 use Illuminate\Http\Request;
@@ -24,16 +28,20 @@ class ExportImportController extends Controller
     public function export()
     {
         $data = [
-            'version'        => '1.0',
-            'exported_at'    => now()->toIso8601String(),
-            'customers'      => Customer::all()->toArray(),
-            'work_categories'=> WorkCategory::all()->toArray(),
-            'projects'       => Project::all()->toArray(),
-            'time_entries'   => TimeEntry::all()->toArray(),
-            'expenses'       => Expense::all()->toArray(),
-            'invoices'       => Invoice::all()->toArray(),
+            'version'            => '1.1',
+            'exported_at'        => now()->toIso8601String(),
+            'customers'          => Customer::all()->toArray(),
+            'work_categories'    => WorkCategory::all()->toArray(),
+            'projects'           => Project::all()->toArray(),
+            'time_entries'       => TimeEntry::all()->toArray(),
+            'expenses'           => Expense::all()->toArray(),
+            'invoices'           => Invoice::all()->toArray(),
             'invoice_time_entry' => DB::table('invoice_time_entry')->get()->toArray(),
             'invoice_expense'    => DB::table('invoice_expense')->get()->toArray(),
+            'quotes'             => Quote::all()->toArray(),
+            'quote_features'     => QuoteFeature::all()->toArray(),
+            'contract_templates' => ContractTemplate::all()->toArray(),
+            'contracts'          => Contract::all()->toArray(),
         ];
 
         $json     = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
@@ -70,12 +78,16 @@ class ExportImportController extends Controller
         DB::transaction(function () use ($data, $mode) {
 
             if ($mode === 'replace') {
-                // Pivot-Tabellen zuerst leeren (FK)
+                // Abhängige Tabellen zuerst leeren (FK-Reihenfolge)
                 DB::table('invoice_time_entry')->delete();
                 DB::table('invoice_expense')->delete();
                 Invoice::query()->delete();
                 Expense::query()->delete();
                 TimeEntry::query()->delete();
+                Contract::query()->delete();
+                ContractTemplate::query()->delete();
+                QuoteFeature::query()->delete();
+                Quote::query()->delete();
                 Project::query()->delete();
                 WorkCategory::query()->delete();
                 Customer::query()->delete();
@@ -182,6 +194,56 @@ class ExportImportController extends Controller
                         'expense_id' => $expId,
                     ]);
                 }
+            }
+
+            // Quotes
+            $quoteMap = [];
+            foreach ($data['quotes'] ?? [] as $row) {
+                $oldId = $row['id'];
+                unset($row['id']);
+                $row['customer_id'] = $customerMap[$row['customer_id']] ?? $row['customer_id'];
+                if (isset($row['sender_snapshot']) && is_string($row['sender_snapshot'])) {
+                    $row['sender_snapshot'] = json_decode($row['sender_snapshot'], true);
+                }
+                $row = $this->stripTimestampsIfReplace($row, $mode);
+                $new = Quote::firstOrCreate(
+                    ['quote_number' => $row['quote_number']],
+                    $row
+                );
+                $quoteMap[$oldId] = $new->id;
+            }
+
+            // QuoteFeatures
+            foreach ($data['quote_features'] ?? [] as $row) {
+                unset($row['id']);
+                $row['quote_id'] = $quoteMap[$row['quote_id']] ?? null;
+                if (!$row['quote_id']) continue;
+                $row = $this->stripTimestampsIfReplace($row, $mode);
+                QuoteFeature::create($row);
+            }
+
+            // ContractTemplates
+            $templateMap = [];
+            foreach ($data['contract_templates'] ?? [] as $row) {
+                $oldId = $row['id'];
+                unset($row['id']);
+                $row = $this->stripTimestampsIfReplace($row, $mode);
+                $new = ContractTemplate::firstOrCreate(
+                    ['name' => $row['name']],
+                    $row
+                );
+                $templateMap[$oldId] = $new->id;
+            }
+
+            // Contracts
+            foreach ($data['contracts'] ?? [] as $row) {
+                unset($row['id']);
+                $row['customer_id'] = $customerMap[$row['customer_id']] ?? $row['customer_id'];
+                if (!empty($row['contract_template_id'])) {
+                    $row['contract_template_id'] = $templateMap[$row['contract_template_id']] ?? null;
+                }
+                $row = $this->stripTimestampsIfReplace($row, $mode);
+                Contract::create($row);
             }
         });
 

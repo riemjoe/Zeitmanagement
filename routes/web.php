@@ -14,6 +14,8 @@ use App\Http\Controllers\TimerController;
 use App\Http\Controllers\ExportImportController;
 use App\Http\Controllers\QuoteController;
 use App\Http\Controllers\ProjectTodoController;
+use App\Http\Controllers\ContractController;
+use App\Http\Controllers\ContractTemplateController;
 
 // Authentifizierung (ungeschützt)
 Route::get('/login',  [AuthController::class, 'showLogin'])->name('login');
@@ -70,6 +72,18 @@ Route::middleware('auth.simple')->group(function () {
     Route::get('/quotes/{quote}/lastenheft', [QuoteController::class, 'lastenheft'])
         ->name('quotes.lastenheft');
     Route::resource('quotes', QuoteController::class);
+
+    // Verträge – custom-Routen vor resource
+    Route::get('/contracts/render-template', [ContractController::class, 'renderTemplate'])
+        ->name('contracts.render-template');
+    Route::post('/contracts/{contract}/upload-pdf', [ContractController::class, 'uploadPdf'])
+        ->name('contracts.upload-pdf');
+    Route::get('/contracts/{contract}/print', [ContractController::class, 'print'])
+        ->name('contracts.print');
+    Route::resource('contracts', ContractController::class);
+
+    // Vertragsvorlagen
+    Route::resource('contract-templates', ContractTemplateController::class);
 
     // Projekt-ToDos
     Route::post('/projects/{project}/todos', [ProjectTodoController::class, 'store'])

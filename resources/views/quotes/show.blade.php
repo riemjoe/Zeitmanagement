@@ -57,9 +57,15 @@
             @endif
         </div>
         <div class="text-right shrink-0 min-w-[200px]">
-            <div class="text-xs text-gray-400 mb-3">
-                {{ number_format($quote->total_hours, 2, ',', '.') }} h
-                · {{ number_format($quote->effective_hourly_rate, 2, ',', '.') }} €/h
+            <div class="text-xs text-gray-400 mb-3 space-y-0.5">
+                @if((float)$quote->buffer_percent > 0)
+                <div>{{ number_format($quote->raw_hours, 2, ',', '.') }} h Features
+                    + {{ number_format($quote->buffer_percent, 0) }}% Puffer
+                    = {{ number_format($quote->total_hours, 2, ',', '.') }} h gesamt</div>
+                @else
+                <div>{{ number_format($quote->total_hours, 2, ',', '.') }} h</div>
+                @endif
+                <div>{{ number_format($quote->effective_hourly_rate, 2, ',', '.') }} €/h</div>
             </div>
             <div class="space-y-1 text-sm">
                 <div class="flex justify-between gap-8 text-gray-600">

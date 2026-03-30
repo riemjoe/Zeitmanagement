@@ -4,6 +4,10 @@
 @section('header-actions')
     <a href="{{ route('customers.edit', $customer) }}"
        class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg">Bearbeiten</a>
+    <a href="{{ route('contracts.create') }}?customer_id={{ $customer->id }}"
+       class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-1">
+        <i class="ph-bold ph-files"></i> Vertrag erstellen
+    </a>
     <a href="{{ route('invoices.create') }}?customer_id={{ $customer->id }}"
        class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg">+ Rechnung erstellen</a>
 @endsection
@@ -33,8 +37,9 @@
         </div>
     </div>
 
-    {{-- Projekte --}}
+    {{-- Projekte + Verträge --}}
     <div class="col-span-2 space-y-4">
+        {{-- Projekte --}}
         <div class="bg-white rounded-xl border border-gray-200">
             <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                 <h3 class="font-semibold text-gray-800">Projekte ({{ $customer->projects->count() }})</h3>
@@ -64,6 +69,76 @@
                 </div>
                 @empty
                 <p class="px-5 py-6 text-center text-gray-400 text-sm">Noch keine Projekte.</p>
+                @endforelse
+            </div>
+        </div>
+
+        {{-- Verträge --}}
+        @php
+        $statusColors = [
+            'draft'      => 'bg-gray-100 text-gray-500',
+            'sent'       => 'bg-blue-100 text-blue-700',
+            'signed'     => 'bg-green-100 text-green-700',
+            'terminated' => 'bg-red-100 text-red-500',
+        ];
+        $statusLabels = [
+            'draft'      => 'Entwurf',
+            'sent'       => 'Versendet',
+            'signed'     => 'Unterzeichnet',
+            'terminated' => 'Beendet',
+        ];
+        @endphp
+        <div class="bg-white rounded-xl border border-gray-200">
+            <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h3 class="font-semibold text-gray-800">
+                    <i class="ph-bold ph-files text-gray-400 mr-1"></i>
+                    Verträge ({{ $customer->contracts->count() }})
+                </h3>
+                <a href="{{ route('contracts.create') }}?customer_id={{ $customer->id }}"
+                   class="text-sm text-indigo-600 hover:underline">+ Vertrag erstellen</a>
+            </div>
+            <div class="divide-y divide-gray-50">
+                @forelse($customer->contracts->sortByDesc('date') as $contract)
+                <div class="px-5 py-3 flex items-center justify-between gap-4">
+                    <div class="flex-1 min-w-0">
+                        <a href="{{ route('contracts.show', $contract) }}"
+                           class="font-medium text-gray-800 hover:text-indigo-600 text-sm truncate block">
+                            {{ $contract->title }}
+                        </a>
+                        <p class="text-xs text-gray-400 mt-0.5">
+                            @if($contract->template)
+                                <span class="text-gray-400">{{ $contract->template->name }}</span> ·
+                            @endif
+                            {{ $contract->date?->format('d.m.Y') ?? '–' }}
+                            @if($contract->valid_until)
+                                · Gültig bis
+                                <span class="{{ $contract->valid_until->isPast() ? 'text-red-400' : '' }}">
+                                    {{ $contract->valid_until->format('d.m.Y') }}
+                                </span>
+                            @endif
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        @if($contract->signed_pdf_path)
+                        <a href="{{ $contract->signed_pdf_url }}" target="_blank"
+                           class="text-xs text-green-600 hover:text-green-800 flex items-center gap-0.5"
+                           title="Signiertes PDF öffnen">
+                            <i class="ph-bold ph-file-pdf"></i>
+                        </a>
+                        @endif
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $statusColors[$contract->status] ?? 'bg-gray-100 text-gray-500' }}">
+                            {{ $statusLabels[$contract->status] ?? $contract->status }}
+                        </span>
+                    </div>
+                </div>
+                @empty
+                <div class="px-5 py-6 text-center">
+                    <p class="text-gray-400 text-sm">Noch keine Verträge vorhanden.</p>
+                    <a href="{{ route('contracts.create') }}?customer_id={{ $customer->id }}"
+                       class="text-xs text-indigo-500 hover:underline mt-1 inline-block">
+                        Ersten Vertrag erstellen →
+                    </a>
+                </div>
                 @endforelse
             </div>
         </div>

@@ -11,7 +11,7 @@ class Quote extends Model
     protected $fillable = [
         'customer_id', 'quote_number', 'title', 'date', 'valid_until',
         'status', 'hourly_rate', 'lines_per_hour', 'tax_rate', 'discount',
-        'notes', 'sender_snapshot',
+        'buffer_percent', 'notes', 'sender_snapshot',
     ];
 
     protected $casts = [
@@ -20,6 +20,7 @@ class Quote extends Model
         'tax_rate'        => 'decimal:2',
         'discount'        => 'decimal:2',
         'hourly_rate'     => 'decimal:2',
+        'buffer_percent'  => 'decimal:2',
         'sender_snapshot' => 'array',
     ];
 
@@ -45,10 +46,17 @@ class Quote extends Model
         return (float) ($this->hourly_rate ?? Setting::get('hourly_rate', 80));
     }
 
-    /** Gesamtstunden aller Features (LoC-berechnet oder manuell). */
-    public function getTotalHoursAttribute(): float
+    /** Rohstunden aller Features (ohne Puffer). */
+    public function getRawHoursAttribute(): float
     {
         return $this->features->sum(fn ($f) => $f->effective_hours);
+    }
+
+    /** Gesamtstunden inkl. Puffer. */
+    public function getTotalHoursAttribute(): float
+    {
+        $buffer = (float) ($this->buffer_percent ?? 0);
+        return round($this->raw_hours * (1 + $buffer / 100), 2);
     }
 
     /** Netto-Gesamtbetrag vor Rabatt. */
