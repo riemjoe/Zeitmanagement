@@ -28,16 +28,20 @@ class ProjectController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'customer_id' => 'required|exists:customers,id',
-            'name'        => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'hourly_rate' => 'nullable|numeric|min:0',
-            'status'      => 'required|in:active,paused,completed',
-            'notes'       => 'nullable|string',
+            'customer_id'   => 'required|exists:customers,id',
+            'name'          => 'required|string|max:255',
+            'description'   => 'nullable|string',
+            'hourly_rate'   => 'nullable|numeric|min:0',
+            'status'        => 'required|in:active,paused,completed',
+            'notes'         => 'nullable|string',
+            'budget_hours'  => 'nullable|numeric|min:0',
+            'budget_amount' => 'nullable|numeric|min:0',
+            'deadline'      => 'nullable|date',
         ]);
 
-        // Leerer String → null (globalen Stundenlohn verwenden)
-        $data['hourly_rate'] = $data['hourly_rate'] ?: null;
+        $data['hourly_rate']   = $data['hourly_rate']   ?: null;
+        $data['budget_hours']  = $data['budget_hours']  ?: null;
+        $data['budget_amount'] = $data['budget_amount'] ?: null;
 
         Project::create($data);
         return redirect()->route('projects.index')->with('success', 'Projekt wurde angelegt.');
@@ -50,6 +54,8 @@ class ProjectController extends Controller
             'timeEntries.workCategory',
             'timeEntries.invoices',
             'expenses',
+            'todos',
+            'quote',
         ]);
         return view('projects.show', compact('project'));
     }
@@ -64,18 +70,23 @@ class ProjectController extends Controller
     public function update(Request $request, Project $project)
     {
         $data = $request->validate([
-            'customer_id' => 'required|exists:customers,id',
-            'name'        => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'hourly_rate' => 'nullable|numeric|min:0',
-            'status'      => 'required|in:active,paused,completed',
-            'notes'       => 'nullable|string',
+            'customer_id'   => 'required|exists:customers,id',
+            'name'          => 'required|string|max:255',
+            'description'   => 'nullable|string',
+            'hourly_rate'   => 'nullable|numeric|min:0',
+            'status'        => 'required|in:active,paused,completed',
+            'notes'         => 'nullable|string',
+            'budget_hours'  => 'nullable|numeric|min:0',
+            'budget_amount' => 'nullable|numeric|min:0',
+            'deadline'      => 'nullable|date',
         ]);
 
-        $data['hourly_rate'] = $data['hourly_rate'] ?: null;
+        $data['hourly_rate']   = $data['hourly_rate']   ?: null;
+        $data['budget_hours']  = $data['budget_hours']  ?: null;
+        $data['budget_amount'] = $data['budget_amount'] ?: null;
 
         $project->update($data);
-        return redirect()->route('projects.index')->with('success', 'Projekt wurde aktualisiert.');
+        return redirect()->route('projects.show', $project)->with('success', 'Projekt wurde aktualisiert.');
     }
 
     public function destroy(Project $project)

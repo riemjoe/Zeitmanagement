@@ -12,6 +12,8 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\TimerController;
 use App\Http\Controllers\ExportImportController;
+use App\Http\Controllers\QuoteController;
+use App\Http\Controllers\ProjectTodoController;
 
 // Authentifizierung (ungeschützt)
 Route::get('/login',  [AuthController::class, 'showLogin'])->name('login');
@@ -59,6 +61,21 @@ Route::middleware('auth.simple')->group(function () {
     Route::get('/export/download', [ExportImportController::class, 'export'])->name('export-import.download');
     Route::get('/import',          [ExportImportController::class, 'showImport'])->name('export-import.import');
     Route::post('/import',         [ExportImportController::class, 'import'])->name('export-import.import.post');
+
+    // Angebote – convert-Route vor resource definieren
+    Route::post('/quotes/{quote}/convert', [QuoteController::class, 'convertToProject'])
+        ->name('quotes.convert');
+    Route::resource('quotes', QuoteController::class);
+
+    // Projekt-ToDos
+    Route::post('/projects/{project}/todos', [ProjectTodoController::class, 'store'])
+        ->name('project-todos.store');
+    Route::patch('/todos/{todo}/toggle', [ProjectTodoController::class, 'toggle'])
+        ->name('project-todos.toggle');
+    Route::delete('/todos/{todo}', [ProjectTodoController::class, 'destroy'])
+        ->name('project-todos.destroy');
+    Route::post('/todos/reorder', [ProjectTodoController::class, 'reorder'])
+        ->name('project-todos.reorder');
 
     // Live-Timer
     Route::get('/timer/status',  [TimerController::class, 'status'])->name('timer.status');

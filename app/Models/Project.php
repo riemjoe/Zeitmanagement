@@ -5,16 +5,21 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Carbon\Carbon;
 
 class Project extends Model
 {
     protected $fillable = [
         'customer_id', 'name', 'description',
         'hourly_rate', 'status', 'notes',
+        'budget_hours', 'budget_amount', 'deadline', 'quote_id',
     ];
 
     protected $casts = [
-        'hourly_rate' => 'decimal:2',
+        'hourly_rate'    => 'decimal:2',
+        'budget_hours'   => 'decimal:2',
+        'budget_amount'  => 'decimal:2',
+        'deadline'       => 'date',
     ];
 
     public function customer(): BelongsTo
@@ -30,6 +35,16 @@ class Project extends Model
     public function expenses(): HasMany
     {
         return $this->hasMany(Expense::class);
+    }
+
+    public function todos(): HasMany
+    {
+        return $this->hasMany(ProjectTodo::class)->orderBy('sort_order')->orderBy('id');
+    }
+
+    public function quote(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Quote::class);
     }
 
     /**
@@ -56,5 +71,26 @@ class Project extends Model
         return $this->timeEntries->sum(fn ($e) =>
             $e->hours * $this->effective_hourly_rate
         );
+    }
+
+    /** Stunden-Budget-Prozentsatz (0–100+). */
+    public function getBudgetHoursPercentAttribute(): float
+    {
+        if (!$this->budget_hours || (float) $this->budget_hours <= 0) return 0;
+        return min(100, round($this->total_hours / (float) $this->budget_hours * 100, 1));
+    }
+
+    /** Euro-Budget-Prozentsatz (0–100+). */
+    public function getBudgetAmountPercentAttribute(): float
+    {
+        if (!$this->budget_amount || (float) $this->budget_amount <= 0) return 0;
+        return min(100, round($this->total_amount / (float) $this->budget_amount * 100, 1));
+    }
+
+    /** Tage bis Deadline (negativ = überfällig). */
+    public function getDaysUntilDeadlineAttribute(): ?int
+    {
+        if (!$this->deadline) return null;
+        return (int) now()->startOfDay()->diffInDays($this->deadline->startOfDay(), false);
     }
 }

@@ -50,6 +50,25 @@
                 </div>
             </div>
 
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Stundenbudget</label>
+                    <input type="number" name="budget_hours" value="{{ old('budget_hours', $project->budget_hours) }}"
+                           min="0" step="0.5" placeholder="optional"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Budget (€)</label>
+                    <input type="number" name="budget_amount" value="{{ old('budget_amount', $project->budget_amount) }}"
+                           min="0" step="0.01" placeholder="optional"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Deadline</label>
+                    <input type="date" name="deadline" value="{{ old('deadline', $project->deadline?->format('Y-m-d')) }}"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Notizen</label>
                 <textarea name="notes" rows="2"

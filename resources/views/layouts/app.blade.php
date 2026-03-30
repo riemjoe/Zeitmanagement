@@ -69,6 +69,7 @@
                     ['label' => 'Kategorien',       'route' => 'work-categories.index','icon' => 'ph-tag'],
                     ['label' => 'Zeiterfassung',    'route' => 'time-entries.index',   'icon' => 'ph-clock'],
                     ['label' => 'Ausgaben',         'route' => 'expenses.index',       'icon' => 'ph-receipt'],
+                    ['label' => 'Angebote',         'route' => 'quotes.index',         'icon' => 'ph-file-doc'],
                     ['label' => 'Rechnungen',       'route' => 'invoices.index',       'icon' => 'ph-file-text'],
                     ['label' => 'Einstellungen',    'route' => 'settings.edit',        'icon' => 'ph-gear'],
                     ['label' => 'Export',           'route' => 'export-import.export', 'icon' => 'ph-export'],
@@ -78,7 +79,7 @@
                 $groups = [
                     'Übersicht'   => ['dashboard'],
                     'Verwaltung'  => ['customers.index', 'projects.index', 'work-categories.index'],
-                    'Erfassung'   => ['time-entries.index', 'expenses.index', 'invoices.index'],
+                    'Erfassung'   => ['time-entries.index', 'expenses.index', 'quotes.index', 'invoices.index'],
                     'System'      => ['settings.edit', 'export-import.export', 'export-import.import'],
                 ];
             @endphp
