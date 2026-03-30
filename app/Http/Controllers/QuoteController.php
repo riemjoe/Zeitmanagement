@@ -157,6 +157,18 @@ class QuoteController extends Controller
             ->with('success', 'Angebot wurde gelöscht.');
     }
 
+    public function pdf(Quote $quote)
+    {
+        $quote->load(['customer', 'features']);
+        return view('quotes.pdf', compact('quote'));
+    }
+
+    public function lastenheft(Quote $quote)
+    {
+        $quote->load(['customer', 'features']);
+        return view('quotes.lastenheft', compact('quote'));
+    }
+
     /**
      * Angebot in ein Projekt umwandeln.
      */

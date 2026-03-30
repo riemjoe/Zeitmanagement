@@ -12,6 +12,14 @@
         </button>
     </form>
     @endif
+    <a href="{{ route('quotes.pdf', $quote) }}" target="_blank"
+       class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-1">
+        <i class="ph-bold ph-file-pdf"></i> Angebot (PDF)
+    </a>
+    <a href="{{ route('quotes.lastenheft', $quote) }}" target="_blank"
+       class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-1">
+        <i class="ph-bold ph-list-checks"></i> Lastenheft (PDF)
+    </a>
     <a href="{{ route('quotes.edit', $quote) }}"
        class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg">
         Bearbeiten

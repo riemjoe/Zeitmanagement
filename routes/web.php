@@ -62,9 +62,13 @@ Route::middleware('auth.simple')->group(function () {
     Route::get('/import',          [ExportImportController::class, 'showImport'])->name('export-import.import');
     Route::post('/import',         [ExportImportController::class, 'import'])->name('export-import.import.post');
 
-    // Angebote – convert-Route vor resource definieren
+    // Angebote – custom-Routen VOR resource definieren
     Route::post('/quotes/{quote}/convert', [QuoteController::class, 'convertToProject'])
         ->name('quotes.convert');
+    Route::get('/quotes/{quote}/pdf', [QuoteController::class, 'pdf'])
+        ->name('quotes.pdf');
+    Route::get('/quotes/{quote}/lastenheft', [QuoteController::class, 'lastenheft'])
+        ->name('quotes.lastenheft');
     Route::resource('quotes', QuoteController::class);
 
     // Projekt-ToDos
