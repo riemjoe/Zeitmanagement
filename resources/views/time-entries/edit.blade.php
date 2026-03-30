@@ -40,15 +40,26 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Stunden</label>
                     <input type="number" name="hours" value="{{ old('hours', $timeEntry->hours) }}"
-                           min="0.01" max="24" step="0.25" required
+                           min="0.01" max="24" step="0.01" required
                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Beschreibung</label>
-                <textarea name="description" rows="2"
-                          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">{{ old('description', $timeEntry->description) }}</textarea>
+            <div class="grid grid-cols-3 gap-4">
+                <div class="col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Beschreibung</label>
+                    <textarea name="description" rows="2"
+                              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">{{ old('description', $timeEntry->description) }}</textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Ticket-ID
+                        <span class="font-normal text-gray-400">(optional)</span>
+                    </label>
+                    <input type="text" name="ticket_id" value="{{ old('ticket_id', $timeEntry->ticket_id) }}"
+                           placeholder="z.B. PROJ-123"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
             </div>
         </div>
 

@@ -51,6 +51,7 @@ class TimeEntryController extends Controller
             'date'             => 'required|date',
             'hours'            => 'required|numeric|min:0.01|max:24',
             'description'      => 'nullable|string',
+            'ticket_id'        => 'nullable|string|max:100',
         ]);
 
         TimeEntry::create($data);
@@ -76,6 +77,7 @@ class TimeEntryController extends Controller
             'date'             => 'required|date',
             'hours'            => 'required|numeric|min:0.01|max:24',
             'description'      => 'nullable|string',
+            'ticket_id'        => 'nullable|string|max:100',
         ]);
 
         $timeEntry->update($data);

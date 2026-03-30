@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\ProjectController;
@@ -9,33 +10,53 @@ use App\Http\Controllers\TimeEntryController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\TimerController;
 
-// Dashboard
-Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+// Authentifizierung (ungeschützt)
+Route::get('/login',  [AuthController::class, 'showLogin'])->name('login');
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Kunden
-Route::resource('customers', CustomerController::class);
+// Alle anderen Routen nur nach Login
+Route::middleware('auth.simple')->group(function () {
 
-// Projekte
-Route::resource('projects', ProjectController::class);
+    // Dashboard
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
-// Arbeitskategorien
-Route::resource('work-categories', WorkCategoryController::class)
-    ->only(['index', 'store', 'update', 'destroy']);
+    // Kunden
+    Route::resource('customers', CustomerController::class);
 
-// Zeiterfassung
-Route::resource('time-entries', TimeEntryController::class)
-    ->except(['show']);
+    // Projekte
+    Route::resource('projects', ProjectController::class);
 
-// Ausgaben
-Route::resource('expenses', ExpenseController::class)
-    ->except(['show']);
+    // Arbeitskategorien
+    Route::resource('work-categories', WorkCategoryController::class)
+        ->only(['index', 'store', 'update', 'destroy']);
 
-// Rechnungen – billable-items VOR resource-Route definieren, sonst matcht {invoice} zuerst
-Route::get('/invoices/billable-items', [InvoiceController::class, 'getBillableItems'])
-    ->name('invoices.billable-items');
-Route::resource('invoices', InvoiceController::class);
+    // Zeiterfassung
+    Route::resource('time-entries', TimeEntryController::class)
+        ->except(['show']);
 
-// Einstellungen
-Route::get('/settings', [SettingController::class, 'edit'])->name('settings.edit');
-Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+    // Ausgaben
+    Route::resource('expenses', ExpenseController::class)
+        ->except(['show']);
+
+    // Rechnungen – custom-Routen VOR resource-Route definieren, sonst matcht {invoice} zuerst
+    Route::get('/invoices/billable-items', [InvoiceController::class, 'getBillableItems'])
+        ->name('invoices.billable-items');
+    Route::get('/invoices/{invoice}/leistungsbeschreibung', [InvoiceController::class, 'leistungsbeschreibung'])
+        ->name('invoices.leistungsbeschreibung');
+    Route::resource('invoices', InvoiceController::class);
+
+    // Einstellungen
+    Route::get('/settings',  [SettingController::class, 'edit'])->name('settings.edit');
+    Route::put('/settings',  [SettingController::class, 'update'])->name('settings.update');
+    Route::post('/settings/password', [SettingController::class, 'updatePassword'])->name('settings.password');
+
+    // Live-Timer
+    Route::get('/timer/status',  [TimerController::class, 'status'])->name('timer.status');
+    Route::post('/timer/start',  [TimerController::class, 'start'])->name('timer.start');
+    Route::post('/timer/stop',   [TimerController::class, 'stop'])->name('timer.stop');
+    Route::post('/timer/cancel', [TimerController::class, 'cancel'])->name('timer.cancel');
+
+});

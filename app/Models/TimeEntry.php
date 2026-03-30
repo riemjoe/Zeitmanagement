@@ -10,7 +10,7 @@ class TimeEntry extends Model
 {
     protected $fillable = [
         'project_id', 'work_category_id',
-        'date', 'hours', 'description', 'billed',
+        'date', 'hours', 'description', 'ticket_id', 'billed',
     ];
 
     protected $casts = [
@@ -31,7 +31,7 @@ class TimeEntry extends Model
 
     public function invoices(): BelongsToMany
     {
-        return $this->belongsToMany(Invoice::class);
+        return $this->belongsToMany(Invoice::class, 'invoice_time_entry');
     }
 
     /**

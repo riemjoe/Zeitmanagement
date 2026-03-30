@@ -10,7 +10,7 @@ class Invoice extends Model
 {
     protected $fillable = [
         'customer_id', 'invoice_number', 'date', 'due_date',
-        'status', 'tax_rate', 'discount', 'notes', 'sender_snapshot',
+        'status', 'tax_rate', 'discount', 'notes', 'service_description', 'sender_snapshot',
     ];
 
     protected $casts = [
@@ -28,12 +28,14 @@ class Invoice extends Model
 
     public function timeEntries(): BelongsToMany
     {
-        return $this->belongsToMany(TimeEntry::class);
+        // Tabelle explizit angeben – Migration hat 'invoice_time_entry' angelegt
+        return $this->belongsToMany(TimeEntry::class, 'invoice_time_entry');
     }
 
     public function expenses(): BelongsToMany
     {
-        return $this->belongsToMany(Expense::class);
+        // Tabelle explizit angeben – Migration hat 'invoice_expense' angelegt
+        return $this->belongsToMany(Expense::class, 'invoice_expense');
     }
 
     // ── Berechnungen ─────────────────────────────────────────────────────────

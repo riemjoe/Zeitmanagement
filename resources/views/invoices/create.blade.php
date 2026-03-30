@@ -30,11 +30,21 @@
                     <input type="date" name="due_date" value="{{ date('Y-m-d', strtotime('+' . ($settings['payment_days'] ?? 14) . ' days')) }}" required
                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
+                @if(($settings['kleinunternehmer'] ?? '0') === '1')
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">MwSt.</label>
+                    <div class="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-400">
+                        0 % – Kleinunternehmer §&nbsp;19 UStG
+                    </div>
+                    <input type="hidden" name="tax_rate" value="0">
+                </div>
+                @else
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">MwSt. (%)</label>
                     <input type="number" name="tax_rate" value="{{ $settings['tax_rate'] ?? 19 }}" min="0" max="100" step="0.01" required
                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
+                @endif
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Rabatt (€)</label>
                     <input type="number" name="discount" value="0" min="0" step="0.01"
@@ -115,6 +125,21 @@
             </div>
         </div>
 
+        {{-- Leistungsbeschreibung --}}
+        <div class="bg-white rounded-xl border border-gray-200 p-6 mb-4" x-show="customerId">
+            <div class="flex items-center justify-between border-b pb-2 mb-3">
+                <h3 class="font-semibold text-gray-700">Leistungsbeschreibung</h3>
+                <button type="button" @click="generateDescription()"
+                        class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-lg transition-colors">
+                    ✨ Auto-generieren
+                </button>
+            </div>
+            <p class="text-xs text-gray-400 mb-2">Wird auf der Rechnung als separater Abschnitt vor den Positionen gedruckt. Auto-generieren fasst alle gewählten Zeiteinträge nach Kategorie zusammen.</p>
+            <textarea name="service_description" x-model="serviceDescription" rows="8"
+                      placeholder="Leistungszeitraum und Beschreibung der erbrachten Tätigkeiten …"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+        </div>
+
         {{-- Zusammenfassung --}}
         <div class="bg-white rounded-xl border border-gray-200 p-6" x-show="customerId"
              x-data="{ get taxRate() { return parseFloat(document.querySelector('[name=tax_rate]')?.value ?? 19) / 100; } }">
@@ -166,6 +191,7 @@ function invoiceForm() {
         expenses: [],
         selectedTimeEntries: [],
         selectedExpenses: [],
+        serviceDescription: '',
 
         get selectedTimeNet() {
             return this.timeEntries
@@ -232,6 +258,48 @@ function invoiceForm() {
         },
         formatMoney(val) {
             return Number(val).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
+        generateDescription() {
+            const selected = this.timeEntries.filter(e => this.selectedTimeEntries.includes(e.id));
+            if (selected.length === 0) {
+                this.serviceDescription = '';
+                return;
+            }
+
+            // Leistungszeitraum ermitteln
+            const parseDe = str => {
+                const [d, m, y] = str.split('.');
+                return new Date(y, m - 1, d);
+            };
+            const dates = selected.map(e => parseDe(e.date));
+            const minDate = dates.reduce((a, b) => a < b ? a : b);
+            const maxDate = dates.reduce((a, b) => a > b ? a : b);
+            const fmt = d => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const zeitraum = minDate.toDateString() === maxDate.toDateString()
+                ? fmt(minDate)
+                : fmt(minDate) + ' – ' + fmt(maxDate);
+
+            // Nach Kategorie gruppieren
+            const groups = {};
+            for (const e of selected) {
+                if (!groups[e.category]) groups[e.category] = [];
+                groups[e.category].push(e);
+            }
+
+            let lines = [`Leistungszeitraum: ${zeitraum}`, ''];
+            for (const [cat, entries] of Object.entries(groups)) {
+                const totalH = entries.reduce((s, e) => s + e.hours, 0);
+                lines.push(`${cat} (${totalH.toFixed(2).replace('.', ',')} h):`);
+                for (const e of entries) {
+                    let line = `• ${e.date}`;
+                    if (e.ticket_id) line += ` [${e.ticket_id}]`;
+                    if (e.description) line += ` ${e.description}`;
+                    lines.push(line);
+                }
+                lines.push('');
+            }
+
+            this.serviceDescription = lines.join('\n').trimEnd();
         }
     }
 }

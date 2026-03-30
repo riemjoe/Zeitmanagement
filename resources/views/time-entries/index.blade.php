@@ -48,6 +48,7 @@
                 <th class="text-left px-5 py-3 font-semibold text-gray-600">Datum</th>
                 <th class="text-left px-5 py-3 font-semibold text-gray-600">Projekt / Kunde</th>
                 <th class="text-left px-5 py-3 font-semibold text-gray-600">Kategorie</th>
+                <th class="text-left px-5 py-3 font-semibold text-gray-600">Ticket</th>
                 <th class="text-left px-5 py-3 font-semibold text-gray-600">Beschreibung</th>
                 <th class="text-right px-5 py-3 font-semibold text-gray-600">Stunden</th>
                 <th class="text-right px-5 py-3 font-semibold text-gray-600">Betrag</th>
@@ -67,6 +68,13 @@
                         <span class="w-2 h-2 rounded-full" style="background-color:{{ $entry->workCategory->color }}"></span>
                         {{ $entry->workCategory->name }}
                     </span>
+                </td>
+                <td class="px-5 py-3">
+                    @if($entry->ticket_id)
+                    <span class="inline-block bg-gray-100 text-gray-600 text-xs font-mono px-2 py-0.5 rounded">{{ $entry->ticket_id }}</span>
+                    @else
+                    <span class="text-gray-300">–</span>
+                    @endif
                 </td>
                 <td class="px-5 py-3 text-gray-500 max-w-xs truncate">{{ $entry->description ?: '–' }}</td>
                 <td class="px-5 py-3 text-right font-medium">{{ number_format($entry->hours, 2, ',', '.') }}</td>

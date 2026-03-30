@@ -19,10 +19,12 @@ class DatabaseSeeder extends Seeder
             'company_country'     => 'Deutschland',
             'company_email'       => 'info@example.com',
             'company_phone'       => '',
-            'company_tax_id'      => '',
+            'company_tax_number'  => '',   // Steuernummer (z.B. 123/456/78901)
+            'company_vat_id'      => '',   // USt-IdNr. (z.B. DE123456789)
             'hourly_rate'         => '80.00',
             'tax_rate'            => '19',
             // Rechnungsnummern werden automatisch generiert (Format: R-Mär26-01)
+            'kleinunternehmer'    => '0',
             'payment_days'        => '14',
             'bank_name'           => '',
             'bank_iban'           => '',

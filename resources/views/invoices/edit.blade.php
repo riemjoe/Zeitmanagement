@@ -21,10 +21,16 @@
                     <input type="date" name="due_date" value="{{ old('due_date', $invoice->due_date->format('Y-m-d')) }}" required
                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
+                @php $snapKlein = ($invoice->sender_snapshot['kleinunternehmer'] ?? '0') === '1'; @endphp
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">MwSt. (%)</label>
+                    @if($snapKlein)
+                    <div class="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-400">0 % – Kleinunternehmer §&nbsp;19 UStG</div>
+                    <input type="hidden" name="tax_rate" value="0">
+                    @else
                     <input type="number" name="tax_rate" value="{{ old('tax_rate', $invoice->tax_rate) }}" min="0" max="100" step="0.01" required
                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    @endif
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Rabatt (€)</label>

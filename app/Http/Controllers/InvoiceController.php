@@ -51,6 +51,7 @@ class InvoiceController extends Controller
                 'hours'       => (float) $e->hours,
                 'amount'      => round($e->amount, 2),
                 'description' => $e->description ?? '',
+                'ticket_id'   => $e->ticket_id ?? '',
             ]);
 
         $expenses = Expense::with('project')
@@ -81,7 +82,8 @@ class InvoiceController extends Controller
             'due_date'         => 'required|date|after_or_equal:date',
             'tax_rate'         => 'required|numeric|min:0|max:100',
             'discount'         => 'nullable|numeric|min:0',
-            'notes'            => 'nullable|string',
+            'notes'               => 'nullable|string',
+            'service_description' => 'nullable|string',
             'time_entry_ids'   => 'nullable|array',
             'time_entry_ids.*' => 'exists:time_entries,id',
             'expense_ids'      => 'nullable|array',
@@ -97,8 +99,9 @@ class InvoiceController extends Controller
             'due_date'        => $data['due_date'],
             'tax_rate'        => $data['tax_rate'],
             'discount'        => $data['discount'] ?? 0,
-            'notes'           => $data['notes'],
-            'sender_snapshot' => $settings,
+            'notes'               => $data['notes'],
+            'service_description' => $data['service_description'] ?? null,
+            'sender_snapshot'     => $settings,
         ]);
 
         if (!empty($data['time_entry_ids'])) {
@@ -112,6 +115,12 @@ class InvoiceController extends Controller
         }
 
         return redirect()->route('invoices.show', $invoice)->with('success', 'Rechnung wurde erstellt.');
+    }
+
+    public function leistungsbeschreibung(Invoice $invoice)
+    {
+        $invoice->load(['customer', 'timeEntries.project']);
+        return view('invoices.leistungsbeschreibung', compact('invoice'));
     }
 
     public function show(Invoice $invoice)

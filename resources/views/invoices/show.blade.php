@@ -4,6 +4,10 @@
 @section('header-actions')
     <button onclick="window.print()"
             class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg no-print">🖨 Drucken</button>
+    @if($invoice->service_description)
+    <a href="{{ route('invoices.leistungsbeschreibung', $invoice) }}" target="_blank"
+       class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg no-print">📄 Leistungsbeschreibung</a>
+    @endif
     @if($invoice->status !== 'paid')
     <a href="{{ route('invoices.edit', $invoice) }}"
        class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg no-print">Bearbeiten</a>
@@ -50,8 +54,11 @@
             @if(!empty($sender['company_phone']))
             <p class="text-gray-500">{{ $sender['company_phone'] }}</p>
             @endif
-            @if(!empty($sender['company_tax_id']))
-            <p class="text-gray-500">StNr./USt-IdNr.: {{ $sender['company_tax_id'] }}</p>
+            @if(!empty($sender['company_tax_number']))
+            <p class="text-gray-500">Steuernummer: {{ $sender['company_tax_number'] }}</p>
+            @endif
+            @if(!empty($sender['company_vat_id']))
+            <p class="text-gray-500">USt-IdNr.: {{ $sender['company_vat_id'] }}</p>
             @endif
         </div>
 
@@ -121,8 +128,9 @@
     </div>
 
     {{-- Summen --}}
+    @php $isKleinunternehmer = ($invoice->sender_snapshot['kleinunternehmer'] ?? '0') === '1'; @endphp
     <div class="flex justify-end">
-        <div class="text-sm space-y-1 w-64">
+        <div class="text-sm space-y-1 w-72">
             @if($invoice->discount > 0)
             <div class="flex justify-between text-gray-600">
                 <span>Zwischensumme</span>
@@ -133,6 +141,14 @@
                 <span>– {{ number_format($invoice->discount, 2, ',', '.') }} €</span>
             </div>
             @endif
+
+            @if($isKleinunternehmer)
+            {{-- Kleinunternehmer: Brutto = Netto, keine MwSt.-Zeile --}}
+            <div class="flex justify-between font-bold text-xl border-t-2 border-gray-800 pt-2">
+                <span>Gesamtbetrag</span>
+                <span>{{ number_format($invoice->net_total, 2, ',', '.') }} €</span>
+            </div>
+            @else
             <div class="flex justify-between font-semibold border-t pt-1">
                 <span>Nettobetrag</span>
                 <span>{{ number_format($invoice->net_total, 2, ',', '.') }} €</span>
@@ -145,8 +161,16 @@
                 <span>Gesamtbetrag</span>
                 <span>{{ number_format($invoice->gross_total, 2, ',', '.') }} €</span>
             </div>
+            @endif
         </div>
     </div>
+
+    {{-- §19-Pflichthinweis --}}
+    @if($isKleinunternehmer)
+    <div class="text-xs text-gray-500 border-t pt-4 italic">
+        Gemäß §&nbsp;19 Abs.&nbsp;1 UStG wird keine Umsatzsteuer berechnet.
+    </div>
+    @endif
 
     {{-- Notizen --}}
     @if($invoice->notes)
