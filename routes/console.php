@@ -15,13 +15,13 @@ Artisan::command('inspire', function () {
  *   * * * * * cd /pfad/zur/app && php artisan schedule:run >> /dev/null 2>&1
  */
 Schedule::command('tasks:process-recurring')
-    ->dailyAt('06:00')
+    ->everyMinute()
     ->withoutOverlapping()
     ->runInBackground();
 
 // Wartungserinnerungen stündlich prüfen und versenden (damit auch taggleiche Events mit Uhrzeit pünktlich ankommen).
 Schedule::command('maintenance:send-reminders')
-    ->hourly()
+    ->everyMinute()
     ->withoutOverlapping()
     ->runInBackground();
 
