@@ -37,9 +37,16 @@ class Project extends Model
         return $this->hasMany(Expense::class);
     }
 
+    /** Alle Aufgaben des Projekts (nach Position sortiert). */
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(Task::class)->orderBy('position')->orderBy('id');
+    }
+
+    /** Alias für tasks() – Rückwärtskompatibilität. */
     public function todos(): HasMany
     {
-        return $this->hasMany(ProjectTodo::class)->orderBy('sort_order')->orderBy('id');
+        return $this->tasks();
     }
 
     public function quote(): \Illuminate\Database\Eloquent\Relations\BelongsTo

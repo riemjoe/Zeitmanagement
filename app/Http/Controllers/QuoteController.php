@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Project;
-use App\Models\ProjectTodo;
+use App\Models\Task;
 use App\Models\Quote;
 use App\Models\QuoteFeature;
 use App\Models\Setting;
@@ -190,13 +190,15 @@ class QuoteController extends Controller
             'budget_hours'=> $quote->total_hours > 0 ? round($quote->total_hours, 2) : null,
         ]);
 
-        // Features als ToDos anlegen
-        foreach ($quote->features as $i => $feat) {
-            ProjectTodo::create([
-                'project_id'  => $project->id,
-                'title'       => $feat->name,
-                'description' => $feat->description,
-                'sort_order'  => $feat->sort_order,
+        // Features als Aufgaben (Tasks) anlegen
+        foreach ($quote->features as $feat) {
+            Task::create([
+                'project_id'    => $project->id,
+                'title'         => $feat->name,
+                'description'   => $feat->description,
+                'position'      => $feat->sort_order,
+                'kanban_status' => 'ready',
+                'priority'      => 'medium',
             ]);
         }
 
@@ -204,6 +206,6 @@ class QuoteController extends Controller
         $quote->update(['status' => 'accepted']);
 
         return redirect()->route('projects.show', $project)
-            ->with('success', 'Projekt aus Angebot erstellt. ToDos wurden automatisch befüllt.');
+            ->with('success', 'Projekt aus Angebot erstellt. Aufgaben wurden automatisch befüllt.');
     }
 }

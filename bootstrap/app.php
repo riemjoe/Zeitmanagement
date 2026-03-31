@@ -12,7 +12,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'auth.simple' => \App\Http\Middleware\RequireLogin::class,
+            'auth.simple'  => \App\Http\Middleware\RequireLogin::class,
+            'ensure.admin' => \App\Http\Middleware\EnsureAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

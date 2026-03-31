@@ -107,62 +107,125 @@
     @endif
 </div>
 
-{{-- ToDo-Liste --}}
-<div class="bg-white rounded-xl border border-gray-200 mb-6"
-     x-data="todoList({{ $project->todos->map(fn($t) => ['id'=>$t->id,'title'=>$t->title,'description'=>$t->description,'completed'=>$t->completed])->toJson() }})">
+{{-- Aufgaben (Tasks / Kanban) --}}
+@php
+    $initialTasks = $project->tasks->map(fn($t) => [
+        'id'            => $t->id,
+        'title'         => $t->title,
+        'description'   => $t->description,
+        'kanban_status' => $t->kanban_status,
+        'priority'      => $t->priority,
+        'completed'     => $t->kanban_status === 'completed',
+    ])->values()->toJson();
+@endphp
 
-    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+<div class="bg-white rounded-xl border border-gray-200 mb-6"
+     x-data="todoList({{ $initialTasks }})">
+
+    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
         <div class="flex items-center gap-3">
-            <h3 class="font-semibold text-gray-800">ToDos</h3>
+            <h3 class="font-semibold text-gray-800">Aufgaben</h3>
             <span class="text-xs text-gray-400"
-                  x-text="todos.filter(t=>t.completed).length + ' / ' + todos.length + ' erledigt'"></span>
+                  x-text="todos.filter(t => t.completed).length + ' / ' + todos.length + ' erledigt'"></span>
         </div>
-        <button @click="showAdd = !showAdd"
-                class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-lg transition-colors">
-            + Hinzufügen
-        </button>
+        <div class="flex items-center gap-2">
+            <a href="{{ route('kanban.index') }}?project_id={{ $project->id }}"
+               class="text-xs text-indigo-600 hover:text-indigo-800 border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+                <i class="ph-bold ph-kanban text-sm"></i>
+                Im Kanban öffnen
+            </a>
+            <button @click="showAdd = !showAdd"
+                    class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg transition-colors">
+                + Hinzufügen
+            </button>
+        </div>
     </div>
 
-    {{-- Neues ToDo --}}
+    {{-- Neue Aufgabe --}}
     <div x-show="showAdd" x-cloak x-transition class="px-5 py-3 border-b border-gray-100 bg-indigo-50/40">
-        <form @submit.prevent="addTodo()" class="flex items-start gap-2">
-            <div class="flex-1 space-y-1.5">
-                <input type="text" x-model="newTitle" placeholder="ToDo-Titel …" required
+        <form @submit.prevent="addTodo()" class="space-y-2">
+            <div class="space-y-1.5">
+                <input type="text" x-model="newTitle" placeholder="Aufgabentitel …" required
                        class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 <input type="text" x-model="newDesc" placeholder="Beschreibung (optional)"
                        class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400">
             </div>
-            <button type="submit"
-                    class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors shrink-0">
-                Hinzufügen
-            </button>
+            <div class="flex items-center gap-2">
+                <select x-model="newStatus"
+                        class="border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400 bg-white">
+                    <option value="ready">Ready</option>
+                    <option value="wip">In Arbeit</option>
+                    <option value="testing">Testing</option>
+                    <option value="completed">Abgeschlossen</option>
+                </select>
+                <select x-model="newPriority"
+                        class="border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400 bg-white">
+                    <option value="low">Niedrig</option>
+                    <option value="medium">Mittel</option>
+                    <option value="high">Hoch</option>
+                </select>
+                <button type="submit"
+                        class="ml-auto bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors shrink-0">
+                    Hinzufügen
+                </button>
+            </div>
         </form>
     </div>
 
-    {{-- Liste --}}
+    {{-- Aufgabenliste --}}
     <div class="divide-y divide-gray-50">
         <template x-for="todo in todos" :key="todo.id">
-            <div class="px-5 py-3 flex items-start gap-3 group"
+            <div class="px-5 py-3 flex items-center gap-3 group"
                  :class="todo.completed ? 'bg-gray-50' : ''">
+
+                {{-- Checkbox --}}
                 <button @click="toggle(todo)"
-                        class="mt-0.5 shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors"
-                        :class="todo.completed ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 hover:border-indigo-400'">
+                        class="shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors"
+                        :class="todo.completed
+                            ? 'bg-green-500 border-green-500 text-white'
+                            : 'border-gray-300 hover:border-indigo-400'">
                     <i x-show="todo.completed" class="ph-bold ph-check text-xs"></i>
                 </button>
+
+                {{-- Titel + Beschreibung --}}
                 <div class="flex-1 min-w-0">
                     <p class="text-sm font-medium transition-colors"
                        :class="todo.completed ? 'line-through text-gray-400' : 'text-gray-800'"
                        x-text="todo.title"></p>
                     <p class="text-xs text-gray-400 mt-0.5" x-show="todo.description" x-text="todo.description"></p>
                 </div>
+
+                {{-- Kanban-Status-Badge --}}
+                <span class="shrink-0 text-xs font-medium px-2 py-0.5 rounded-full hidden sm:inline-flex"
+                      :class="{
+                          'bg-gray-100 text-gray-500':   todo.kanban_status === 'ready',
+                          'bg-blue-100 text-blue-700':   todo.kanban_status === 'wip',
+                          'bg-amber-100 text-amber-700': todo.kanban_status === 'testing',
+                          'bg-green-100 text-green-700': todo.kanban_status === 'completed',
+                      }"
+                      x-text="{ ready: 'Ready', wip: 'In Arbeit', testing: 'Testing', completed: 'Erledigt' }[todo.kanban_status]">
+                </span>
+
+                {{-- Prioritätspunkt --}}
+                <span class="shrink-0 w-2 h-2 rounded-full"
+                      :class="{
+                          'bg-gray-400':  todo.priority === 'low',
+                          'bg-amber-400': todo.priority === 'medium',
+                          'bg-red-500':   todo.priority === 'high',
+                      }"
+                      :title="{ low: 'Niedrig', medium: 'Mittel', high: 'Hoch' }[todo.priority]">
+                </span>
+
+                {{-- Löschen --}}
                 <button @click="removeTodo(todo)"
                         class="shrink-0 text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all">
                     <i class="ph-bold ph-trash text-sm"></i>
                 </button>
             </div>
         </template>
+
         <div x-show="todos.length === 0" class="px-5 py-8 text-center text-gray-400 text-sm">
-            Noch keine ToDos. Klicke auf „+ Hinzufügen".
+            Noch keine Aufgaben. Klicke auf „+ Hinzufügen".
         </div>
     </div>
 
@@ -170,7 +233,8 @@
     <div class="px-5 py-2 border-t border-gray-100" x-show="todos.length > 0">
         <div class="w-full bg-gray-100 rounded-full h-1.5">
             <div class="h-1.5 rounded-full bg-green-500 transition-all"
-                 :style="'width: ' + (todos.length ? Math.round(todos.filter(t=>t.completed).length / todos.length * 100) : 0) + '%'"></div>
+                 :style="'width: ' + (todos.length ? Math.round(todos.filter(t => t.completed).length / todos.length * 100) : 0) + '%'">
+            </div>
         </div>
     </div>
 </div>
@@ -253,22 +317,25 @@
 <script>
 function todoList(initialTodos) {
     return {
-        todos:    initialTodos ?? [],
-        showAdd:  false,
-        newTitle: '',
-        newDesc:  '',
+        todos:       initialTodos ?? [],
+        showAdd:     false,
+        newTitle:    '',
+        newDesc:     '',
+        newStatus:   'ready',
+        newPriority: 'medium',
 
         async toggle(todo) {
             try {
                 const res = await fetch(`/todos/${todo.id}/toggle`, {
                     method:  'PATCH',
                     headers: {
-                        'Accept': 'application/json',
+                        'Accept':       'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                     },
                 });
                 const data = await res.json();
-                todo.completed = data.completed;
+                todo.completed     = data.completed;
+                todo.kanban_status = data.kanban_status;
             } catch(e) { console.error(e); }
         },
 
@@ -279,26 +346,40 @@ function todoList(initialTodos) {
                     method:  'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Accept':        'application/json',
-                        'X-CSRF-TOKEN':  document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept':       'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                     },
-                    body: JSON.stringify({ title: this.newTitle, description: this.newDesc }),
+                    body: JSON.stringify({
+                        title:         this.newTitle,
+                        description:   this.newDesc,
+                        kanban_status: this.newStatus,
+                        priority:      this.newPriority,
+                    }),
                 });
-                const todo = await res.json();
-                this.todos.push({ id: todo.id, title: todo.title, description: todo.description, completed: false });
-                this.newTitle = '';
-                this.newDesc  = '';
-                this.showAdd  = false;
+                const task = await res.json();
+                this.todos.push({
+                    id:            task.id,
+                    title:         task.title,
+                    description:   task.description,
+                    kanban_status: task.kanban_status,
+                    priority:      task.priority,
+                    completed:     task.completed,
+                });
+                this.newTitle    = '';
+                this.newDesc     = '';
+                this.newStatus   = 'ready';
+                this.newPriority = 'medium';
+                this.showAdd     = false;
             } catch(e) { console.error(e); }
         },
 
         async removeTodo(todo) {
-            if (!confirm('ToDo löschen?')) return;
+            if (!confirm('Aufgabe löschen?')) return;
             try {
                 await fetch(`/todos/${todo.id}`, {
                     method:  'DELETE',
                     headers: {
-                        'Accept': 'application/json',
+                        'Accept':       'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                     },
                 });

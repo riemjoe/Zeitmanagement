@@ -3,76 +3,96 @@
 namespace App\Http\Controllers;
 
 use App\Models\Project;
-use App\Models\ProjectTodo;
+use App\Models\Task;
 use Illuminate\Http\Request;
 
 class ProjectTodoController extends Controller
 {
     /**
-     * Neues ToDo für ein Projekt anlegen.
+     * Neue Aufgabe für ein Projekt anlegen.
+     * POST /projects/{project}/todos
      */
     public function store(Request $request, Project $project)
     {
         $data = $request->validate([
-            'title'       => 'required|string|max:255',
-            'description' => 'nullable|string',
+            'title'         => 'required|string|max:255',
+            'description'   => 'nullable|string|max:2000',
+            'kanban_status' => 'nullable|in:ready,wip,testing,completed',
+            'priority'      => 'nullable|in:low,medium,high',
         ]);
 
-        $maxOrder = $project->todos()->max('sort_order') ?? -1;
+        $maxPos = $project->tasks()->max('position') ?? -1;
 
-        $todo = ProjectTodo::create([
-            'project_id'  => $project->id,
-            'title'       => $data['title'],
-            'description' => $data['description'] ?? null,
-            'sort_order'  => $maxOrder + 1,
+        $task = Task::create([
+            'project_id'    => $project->id,
+            'title'         => $data['title'],
+            'description'   => $data['description'] ?? null,
+            'kanban_status' => $data['kanban_status'] ?? 'ready',
+            'priority'      => $data['priority'] ?? 'medium',
+            'position'      => $maxPos + 1,
         ]);
 
         if ($request->wantsJson()) {
-            return response()->json($todo);
+            return response()->json([
+                'id'            => $task->id,
+                'title'         => $task->title,
+                'description'   => $task->description,
+                'kanban_status' => $task->kanban_status,
+                'priority'      => $task->priority,
+                'completed'     => $task->kanban_status === 'completed',
+            ]);
         }
 
-        return back()->with('success', 'ToDo hinzugefügt.');
+        return back()->with('success', 'Aufgabe hinzugefügt.');
     }
 
     /**
-     * Abgeschlossen-Status umschalten (AJAX).
+     * Kanban-Status einer Aufgabe umschalten (AJAX).
+     * PATCH /todos/{todo}/toggle
+     * Wechselt zwischen "completed" und "ready".
      */
-    public function toggle(ProjectTodo $todo)
+    public function toggle(Task $todo)
     {
-        $todo->completed    = !$todo->completed;
-        $todo->completed_at = $todo->completed ? now() : null;
+        $todo->kanban_status = $todo->kanban_status === 'completed' ? 'ready' : 'completed';
         $todo->save();
 
         return response()->json([
-            'id'           => $todo->id,
-            'completed'    => $todo->completed,
-            'completed_at' => $todo->completed_at?->toISOString(),
+            'id'            => $todo->id,
+            'completed'     => $todo->kanban_status === 'completed',
+            'kanban_status' => $todo->kanban_status,
         ]);
     }
 
     /**
-     * ToDo löschen.
+     * Aufgabe löschen.
+     * DELETE /todos/{todo}
      */
-    public function destroy(ProjectTodo $todo)
+    public function destroy(Task $todo)
     {
-        $project = $todo->project;
         $todo->delete();
 
         if (request()->wantsJson()) {
             return response()->json(['deleted' => true]);
         }
-        return back()->with('success', 'ToDo gelöscht.');
+
+        return back()->with('success', 'Aufgabe gelöscht.');
     }
 
     /**
      * Reihenfolge aktualisieren (AJAX).
+     * POST /todos/reorder
      */
     public function reorder(Request $request)
     {
-        $ids = $request->validate(['ids' => 'required|array', 'ids.*' => 'integer'])['ids'];
+        $ids = $request->validate([
+            'ids'   => 'required|array',
+            'ids.*' => 'integer',
+        ])['ids'];
+
         foreach ($ids as $order => $id) {
-            ProjectTodo::where('id', $id)->update(['sort_order' => $order]);
+            Task::where('id', $id)->update(['position' => $order]);
         }
+
         return response()->json(['ok' => true]);
     }
 }

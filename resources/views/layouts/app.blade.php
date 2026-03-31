@@ -6,17 +6,127 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Zeitmanagement') – ZeitManager</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     {{-- Phosphor Icons --}}
     <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css"/>
     <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css"/>
     <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css"/>
+    {{-- Dark-Mode: sofort aktiv, bevor Alpine lädt (kein FOUC) --}}
+    @php
+        $dmMode = \App\Models\Setting::get('dark_mode', 'off');
+        $dmFrom = \App\Models\Setting::get('dark_mode_from', '21:00');
+        $dmTo   = \App\Models\Setting::get('dark_mode_to',   '06:00');
+    @endphp
+    <script>
+    (function() {
+        var mode = @json($dmMode);
+        var from = @json($dmFrom);
+        var to   = @json($dmTo);
+        function isDarkNow() {
+            if (mode === 'on')  return true;
+            if (mode === 'off') return false;
+            var now = new Date();
+            var curr  = now.getHours() * 60 + now.getMinutes();
+            var parts = from.split(':').map(Number);
+            var start = parts[0] * 60 + parts[1];
+            var parts2 = to.split(':').map(Number);
+            var end   = parts2[0] * 60 + parts2[1];
+            // Über Mitternacht: start > end (z.B. 21:00 → 06:00)
+            return start > end ? (curr >= start || curr < end) : (curr >= start && curr < end);
+        }
+        if (isDarkNow()) document.documentElement.classList.add('dark');
+        window._dmMode = mode; window._dmFrom = from; window._dmTo = to;
+    })();
+    </script>
     <style>
         [x-cloak] { display: none !important; }
         @media print {
             nav, aside, .no-print { display: none !important; }
             main { margin: 0 !important; padding: 0 !important; }
         }
+
+        /* ── Dark Mode Overrides ───────────────────────────────── */
+        /* Base */
+        .dark body                                 { background-color: #0f172a; color: #e2e8f0; }
+        .dark main                                 { background-color: #0f172a; }
+        /* Backgrounds */
+        .dark .bg-white                            { background-color: #1e293b !important; }
+        .dark .bg-gray-50                          { background-color: #0f172a !important; }
+        .dark .bg-gray-100                         { background-color: #1e293b !important; }
+        .dark .bg-gray-200                         { background-color: #334155 !important; }
+        .dark .bg-gray-700                         { background-color: #334155 !important; }
+        .dark .bg-gray-800                         { background-color: #1e293b !important; }
+        /* Borders */
+        .dark .border-gray-100                     { border-color: #1e293b !important; }
+        .dark .border-gray-200                     { border-color: #334155 !important; }
+        .dark .border-gray-300                     { border-color: #475569 !important; }
+        .dark .border-b                            { border-color: #334155; }
+        .dark .border-t                            { border-color: #334155; }
+        .dark .border                              { border-color: #334155; }
+        /* Text – in dark mode lighter shades map to lighter values */
+        .dark .text-gray-900                       { color: #f1f5f9 !important; }
+        .dark .text-gray-800                       { color: #e2e8f0 !important; }
+        .dark .text-gray-700                       { color: #cbd5e1 !important; }
+        .dark .text-gray-600                       { color: #94a3b8 !important; }
+        .dark .text-gray-500                       { color: #94a3b8 !important; }
+        .dark .text-gray-400                       { color: #64748b !important; }
+        .dark h1, .dark h2, .dark h3, .dark h4     { color: #e2e8f0; }
+        .dark label                                { color: #cbd5e1; }
+        .dark p                                    { color: #cbd5e1; }
+        /* Dividers */
+        .dark .divide-gray-200 > * + *             { border-color: #334155 !important; }
+        .dark .divide-gray-100 > * + *             { border-color: #1e293b !important; }
+        /* Header / Topbar */
+        .dark header.bg-white                      { background-color: #1e293b !important; border-color: #334155 !important; }
+        /* Cards & Panels */
+        .dark .rounded-xl.border                   { border-color: #334155 !important; }
+        .dark .rounded-lg.border                   { border-color: #334155 !important; }
+        .dark .shadow, .dark .shadow-sm, .dark .shadow-lg, .dark .shadow-xl { box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+        /* Tables */
+        .dark table                                { background-color: #1e293b; }
+        .dark thead                                { background-color: #0f172a !important; }
+        .dark th                                   { color: #94a3b8 !important; border-color: #334155 !important; }
+        .dark td                                   { border-color: #334155 !important; color: #e2e8f0; }
+        .dark tbody tr:hover                       { background-color: #0f172a !important; }
+        .dark tbody tr                             { border-color: #334155; }
+        /* Inputs, Textarea, Select */
+        .dark input:not([type=checkbox]):not([type=radio]),
+        .dark textarea,
+        .dark select                              { background-color: #0f172a !important; color: #e2e8f0 !important; border-color: #475569 !important; }
+        .dark input::placeholder,
+        .dark textarea::placeholder               { color: #475569 !important; }
+        /* Pre/Code */
+        .dark pre                                 { background-color: #0f172a !important; color: #e2e8f0 !important; border-color: #334155 !important; }
+        .dark code                                { background-color: #1e293b; color: #a5b4fc; }
+        /* Colored backgrounds (badges, alerts) */
+        .dark .bg-blue-50                         { background-color: #1e3a5f !important; }
+        .dark .bg-green-50                        { background-color: #14291e !important; }
+        .dark .bg-red-50                          { background-color: #2d1515 !important; }
+        .dark .bg-amber-50                        { background-color: #2d2008 !important; }
+        .dark .bg-yellow-50                       { background-color: #2d2008 !important; }
+        .dark .bg-indigo-50                       { background-color: #1e1f4a !important; }
+        .dark .bg-purple-50                       { background-color: #251535 !important; }
+        .dark .bg-violet-50                       { background-color: #1e1535 !important; }
+        .dark .border-green-200                   { border-color: #166534 !important; }
+        .dark .border-red-200                     { border-color: #7f1d1d !important; }
+        .dark .border-amber-200                   { border-color: #78350f !important; }
+        .dark .border-yellow-200                  { border-color: #78350f !important; }
+        .dark .border-indigo-200                  { border-color: #3730a3 !important; }
+        .dark .border-violet-200                  { border-color: #4c1d95 !important; }
+        .dark .text-violet-600, .dark .text-violet-700 { color: #a78bfa !important; }
+        /* Dropdown & popup panels */
+        .dark .z-50.bg-white,
+        .dark .z-50.border.bg-white               { background-color: #1e293b !important; border-color: #334155 !important; }
+        .dark .absolute.bg-white.border           { background-color: #1e293b !important; border-color: #334155 !important; }
+        .dark .shadow-lg.bg-white                 { background-color: #1e293b !important; border-color: #334155 !important; }
+        /* Hover states */
+        .dark .hover\:bg-gray-50:hover            { background-color: #1e293b !important; }
+        .dark .hover\:bg-gray-100:hover           { background-color: #334155 !important; }
+        .dark .hover\:bg-gray-800:hover           { background-color: #334155 !important; }
+        /* Flash messages */
+        .dark .bg-green-50.border-green-200       { background-color: #14291e !important; border-color: #166534 !important; }
+        .dark .bg-red-50.border-red-200           { background-color: #2d1515 !important; border-color: #7f1d1d !important; }
     </style>
     @stack('styles')
 </head>
@@ -69,10 +179,12 @@
                     ['label' => 'Projekte',         'route' => 'projects.index',       'icon' => 'ph-folder'],
                     ['label' => 'Kategorien',       'route' => 'work-categories.index','icon' => 'ph-tag'],
                     ['label' => 'Zeiterfassung',    'route' => 'time-entries.index',   'icon' => 'ph-clock'],
+                    ['label' => 'Kanban',           'route' => 'kanban.index',         'icon' => 'ph-kanban'],
                     ['label' => 'Ausgaben',         'route' => 'expenses.index',       'icon' => 'ph-receipt'],
                     ['label' => 'Angebote',         'route' => 'quotes.index',            'icon' => 'ph-file-doc'],
                     ['label' => 'Verträge',         'route' => 'contracts.index',         'icon' => 'ph-files'],
                     ['label' => 'Rechnungen',       'route' => 'invoices.index',          'icon' => 'ph-file-text'],
+                    ['label' => 'Team',             'route' => 'team.index',           'icon' => 'ph-users-three', 'admin_only' => true],
                     ['label' => 'Einstellungen',    'route' => 'settings.edit',        'icon' => 'ph-gear'],
                     ['label' => 'Export',           'route' => 'export-import.export', 'icon' => 'ph-export'],
                     ['label' => 'Import',           'route' => 'export-import.import', 'icon' => 'ph-download-simple'],
@@ -81,8 +193,8 @@
                 $groups = [
                     'Übersicht'   => ['dashboard'],
                     'Verwaltung'  => ['customers.index', 'projects.index', 'work-categories.index'],
-                    'Erfassung'   => ['time-entries.index', 'expenses.index', 'quotes.index', 'contracts.index', 'invoices.index'],
-                    'System'      => ['settings.edit', 'export-import.export', 'export-import.import'],
+                    'Erfassung'   => ['time-entries.index', 'kanban.index', 'expenses.index', 'quotes.index', 'contracts.index', 'invoices.index'],
+                    'System'      => ['team.index', 'settings.edit', 'export-import.export', 'export-import.import'],
                 ];
             @endphp
 
@@ -92,6 +204,7 @@
                 </p>
                 @foreach($nav as $item)
                     @if(in_array($item['route'], $groupRoutes))
+                        @if(!($item['admin_only'] ?? false) || auth()->user()->isAdmin())
                         @php
                             $base   = rtrim($item['route'], '.index');
                             $active = request()->routeIs($base . '*') || request()->routeIs($item['route']);
@@ -105,6 +218,7 @@
                             <i class="{{ $active ? 'ph-fill' : 'ph-bold' }} {{ $item['icon'] }} text-lg shrink-0"></i>
                             {{ $item['label'] }}
                         </a>
+                        @endif
                     @endif
                 @endforeach
             @endforeach
@@ -112,6 +226,18 @@
 
         {{-- User-Bereich unten --}}
         <div class="p-3 border-t border-gray-700">
+            {{-- Eingeloggter Nutzer --}}
+            <a href="{{ route('settings.edit') }}"
+               class="flex items-center gap-3 px-3 py-2 mb-1 rounded-lg hover:bg-gray-800 transition-colors group">
+                <span class="flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold shrink-0
+                             {{ auth()->user()->isAdmin() ? 'bg-indigo-700 text-indigo-200' : 'bg-gray-700 text-gray-300' }}">
+                    {{ strtoupper(mb_substr(auth()->user()->name, 0, 1)) }}
+                </span>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-200 truncate group-hover:text-white">{{ auth()->user()->name }}</p>
+                    <p class="text-xs text-gray-500 truncate">{{ auth()->user()->roleName() }}</p>
+                </div>
+            </a>
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit"
@@ -146,7 +272,7 @@
 
             {{-- Live-Timer-Widget --}}
             @php
-                $activeTimer   = \App\Models\Timer::with(['project.customer', 'workCategory'])->first();
+                $activeTimer   = \App\Models\Timer::with(['project.customer', 'workCategory'])->where('user_id', auth()->id())->first();
                 $allProjects   = \App\Models\Project::with('customer')->where('status','active')->orderBy('name')->get();
                 $allCategories = \App\Models\WorkCategory::orderBy('name')->get();
             @endphp
@@ -158,7 +284,8 @@
                     {{ $activeTimer ? "'" . addslashes($activeTimer->workCategory->name) . "'" : "''" }},
                     {{ $activeTimer ? "'" . addslashes($activeTimer->project->customer->name) . "'" : "''" }},
                     {{ $activeTimer ? $activeTimer->project->effective_hourly_rate : 0 }},
-                    {{ $activeTimer ? "'" . addslashes($activeTimer->description ?? '') . "'" : "''" }}
+                    {{ $activeTimer ? "'" . addslashes($activeTimer->description ?? '') . "'" : "''" }},
+                    {{ $activeTimer ? ($activeTimer->is_paused ? 'true' : 'false') : 'false' }}
                  )"
                  x-init="init()"
                  class="flex items-center gap-2 no-print shrink-0">
@@ -166,14 +293,20 @@
                 {{-- Timer läuft: Anzeige + Stop-Button --}}
                 <template x-if="running">
                     <div class="flex items-center gap-2">
+                        {{-- Pulsierender Indikator: rot = läuft, amber = pausiert --}}
                         <span class="relative flex h-2.5 w-2.5">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+                                  :class="paused ? 'bg-amber-400' : 'bg-red-400'"></span>
+                            <span class="relative inline-flex rounded-full h-2.5 w-2.5"
+                                  :class="paused ? 'bg-amber-500' : 'bg-red-500'"></span>
                         </span>
                         <div class="text-sm hidden sm:block">
-                            <span class="font-mono font-semibold text-gray-800" x-text="formatTime(elapsed)"></span>
+                            <span class="font-mono font-semibold"
+                                  :class="paused ? 'text-amber-600' : 'text-gray-800'"
+                                  x-text="formatTime(elapsed)"></span>
                             <span class="text-gray-400 mx-1">·</span>
                             <span class="text-gray-600 text-xs" x-text="projectName"></span>
+                            <span x-show="paused" class="ml-1 text-xs text-amber-500 font-medium">Pausiert</span>
                         </div>
                         <span class="font-mono font-semibold text-gray-800 text-sm sm:hidden" x-text="formatTime(elapsed)"></span>
                         {{-- Vollbild-Button --}}
@@ -181,6 +314,16 @@
                                 class="text-gray-400 hover:text-indigo-600 transition-colors p-1 rounded"
                                 title="Live-Ansicht öffnen">
                             <i class="ph-bold ph-arrows-out text-base"></i>
+                        </button>
+                        {{-- Pause / Resume Button --}}
+                        <button @click="paused ? resumeTimer() : pauseTimer()"
+                                class="flex items-center gap-1 text-xs font-medium px-2 py-1.5 rounded-lg transition-colors"
+                                :class="paused
+                                    ? 'bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-200'
+                                    : 'bg-gray-100 hover:bg-gray-200 text-gray-600 border border-gray-200'"
+                                :title="paused ? 'Fortsetzen' : 'Pausieren'">
+                            <i class="ph-bold text-sm" :class="paused ? 'ph-play' : 'ph-pause'"></i>
+                            <span class="hidden sm:inline" x-text="paused ? 'Weiter' : 'Pause'"></span>
                         </button>
                         {{-- Stop-Dropdown --}}
                         <div class="relative" x-data="{ open: false }">
@@ -276,21 +419,37 @@
                     {{-- Pulsierender Indikator --}}
                     <div class="flex items-center gap-2 mb-6">
                         <span class="relative flex h-3 w-3">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+                                  :class="paused ? 'bg-amber-400' : 'bg-red-400'"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3"
+                                  :class="paused ? 'bg-amber-500' : 'bg-red-500'"></span>
                         </span>
-                        <span class="text-gray-400 text-sm font-medium uppercase tracking-widest">Live Tracking</span>
+                        <span class="text-sm font-medium uppercase tracking-widest"
+                              :class="paused ? 'text-amber-400' : 'text-gray-400'"
+                              x-text="paused ? 'Pausiert' : 'Live Tracking'"></span>
                     </div>
 
                     {{-- Große Uhr --}}
-                    <div class="font-mono font-bold text-white tracking-tight mb-2"
+                    <div class="font-mono font-bold tracking-tight mb-2"
                          style="font-size: clamp(3rem, 10vw, 7rem); line-height: 1;"
+                         :class="paused ? 'text-amber-400' : 'text-white'"
                          x-text="formatTime(elapsed)"></div>
 
                     {{-- Erzielter Gewinn --}}
-                    <div class="font-bold text-emerald-400 mb-8"
+                    <div class="font-bold mb-4"
                          style="font-size: clamp(1.5rem, 4vw, 3rem);"
+                         :class="paused ? 'text-amber-300' : 'text-emerald-400'"
                          x-text="formatMoney(elapsed / 3600 * hourlyRate) + ' €'"></div>
+
+                    {{-- Pause / Resume Button im Overlay --}}
+                    <button @click="paused ? resumeTimer() : pauseTimer()"
+                            class="flex items-center gap-2 font-medium py-2.5 px-6 rounded-xl transition-colors mb-6 text-sm"
+                            :class="paused
+                                ? 'bg-amber-500 hover:bg-amber-400 text-white'
+                                : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'">
+                        <i class="ph-bold text-base" :class="paused ? 'ph-play' : 'ph-pause'"></i>
+                        <span x-text="paused ? 'Weiter' : 'Pausieren'"></span>
+                    </button>
 
                     {{-- Infokarten --}}
                     <div class="grid grid-cols-2 gap-3 max-w-lg w-full px-6 mb-6">
@@ -396,10 +555,11 @@
 
 <script>
 function timerWidget(initialRunning, initialElapsed, initialProject, initialCategory,
-                     initialCustomer, initialHourlyRate, initialDescription) {
+                     initialCustomer, initialHourlyRate, initialDescription, initialPaused) {
     return {
         running:          initialRunning,
         elapsed:          initialElapsed,
+        paused:           initialPaused        ?? false,
         projectName:      initialProject,
         categoryName:     initialCategory,
         customerName:     initialCustomer      ?? '',
@@ -413,12 +573,14 @@ function timerWidget(initialRunning, initialElapsed, initialProject, initialCate
         _interval:        null,
 
         init() {
-            if (this.running) this._tick();
+            if (this.running && !this.paused) this._tick();
         },
 
         _tick() {
             clearInterval(this._interval);
-            this._interval = setInterval(() => { this.elapsed++; }, 1000);
+            this._interval = setInterval(() => {
+                if (!this.paused) this.elapsed++;
+            }, 1000);
         },
 
         formatTime(s) {
@@ -442,6 +604,7 @@ function timerWidget(initialRunning, initialElapsed, initialProject, initialCate
             if (res.running) {
                 this.elapsed          = 0;
                 this.running          = true;
+                this.paused           = false;
                 this.projectName      = res.project      ?? '';
                 this.customerName     = res.customer     ?? '';
                 this.categoryName     = res.category     ?? '';
@@ -469,6 +632,23 @@ function timerWidget(initialRunning, initialElapsed, initialProject, initialCate
             this.showOverlay = false;
         },
 
+        async pauseTimer() {
+            const res = await this._post('/timer/pause', {});
+            if (res.paused === true) {
+                this.paused = true;
+                clearInterval(this._interval);
+                // elapsed nicht vom Server übernehmen – Client-Zähler ist aktuell
+            }
+        },
+
+        async resumeTimer() {
+            const res = await this._post('/timer/resume', {});
+            if (res.running === true && res.paused === false) {
+                this.paused = false;
+                this._tick();
+            }
+        },
+
         async _post(url, body) {
             const res = await fetch(url, {
                 method:  'POST',
@@ -483,6 +663,30 @@ function timerWidget(initialRunning, initialElapsed, initialProject, initialCate
         },
     };
 }
+</script>
+
+<script>
+// Dark mode auto-check (für Auto-Modus während die App offen ist)
+(function() {
+    function isDarkNow() {
+        var mode = window._dmMode;
+        if (mode === 'on')  return true;
+        if (mode === 'off') return false;
+        var from = window._dmFrom, to = window._dmTo;
+        var now   = new Date();
+        var curr  = now.getHours() * 60 + now.getMinutes();
+        var s = from.split(':').map(Number); var start = s[0] * 60 + s[1];
+        var e = to.split(':').map(Number);   var end   = e[0] * 60 + e[1];
+        return start > end ? (curr >= start || curr < end) : (curr >= start && curr < end);
+    }
+    if (window._dmMode === 'auto') {
+        setInterval(function() {
+            var html = document.documentElement;
+            if (isDarkNow()) html.classList.add('dark');
+            else html.classList.remove('dark');
+        }, 30000); // alle 30 Sekunden prüfen
+    }
+})();
 </script>
 </body>
 </html>

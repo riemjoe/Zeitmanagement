@@ -2,7 +2,40 @@
 @section('title', 'Einstellungen')
 
 @section('content')
-<div class="max-w-2xl">
+<div class="max-w-2xl space-y-6">
+
+    {{-- Mein Profil – für alle Nutzer --}}
+    <form method="POST" action="{{ route('settings.profile') }}">
+        @csrf @method('PUT')
+        <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+            <h3 class="font-semibold text-gray-700 border-b pb-2">Mein Profil</h3>
+
+            @if($errors->any() && !$errors->hasBag('password'))
+            <div class="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
+                {{ $errors->first() }}
+            </div>
+            @endif
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Name <span class="text-red-500">*</span></label>
+                <input type="text" name="name" value="{{ old('name', auth()->user()->name) }}" required
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">E-Mail <span class="text-red-500">*</span></label>
+                <input type="email" name="email" value="{{ old('email', auth()->user()->email) }}" required
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+                <button type="submit"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-5 py-2 rounded-lg text-sm">
+                    Profil speichern
+                </button>
+            </div>
+        </div>
+    </form>
+
+    @if(auth()->user()->isAdmin())
     <form method="POST" action="{{ route('settings.update') }}" class="space-y-6">
         @csrf @method('PUT')
 
@@ -146,14 +179,98 @@
             </div>
         </div>
 
+        {{-- Dark Mode --}}
+        <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-4"
+             x-data="{
+                darkMode: '{{ old('dark_mode', $settings['dark_mode'] ?? 'off') }}',
+                darkFrom: '{{ old('dark_mode_from', $settings['dark_mode_from'] ?? '21:00') }}',
+                darkTo:   '{{ old('dark_mode_to',   $settings['dark_mode_to']   ?? '06:00') }}'
+             }">
+            <h3 class="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                <i class="ph-bold ph-moon text-indigo-500"></i> Dark Mode
+            </h3>
+
+            <div class="grid grid-cols-1 gap-3">
+                {{-- Off --}}
+                <label class="flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-colors"
+                       :class="darkMode === 'off' ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'">
+                    <input type="radio" name="dark_mode" value="off" x-model="darkMode"
+                           class="text-indigo-600 focus:ring-indigo-500">
+                    <div class="flex items-center gap-2">
+                        <i class="ph-bold ph-sun text-amber-500 text-lg"></i>
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">Immer Hell</p>
+                            <p class="text-xs text-gray-500">Standard Light Mode</p>
+                        </div>
+                    </div>
+                </label>
+
+                {{-- On --}}
+                <label class="flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-colors"
+                       :class="darkMode === 'on' ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'">
+                    <input type="radio" name="dark_mode" value="on" x-model="darkMode"
+                           class="text-indigo-600 focus:ring-indigo-500">
+                    <div class="flex items-center gap-2">
+                        <i class="ph-bold ph-moon text-indigo-500 text-lg"></i>
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">Immer Dunkel</p>
+                            <p class="text-xs text-gray-500">Dark Mode dauerhaft aktiv</p>
+                        </div>
+                    </div>
+                </label>
+
+                {{-- Auto --}}
+                <label class="flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-colors"
+                       :class="darkMode === 'auto' ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'">
+                    <input type="radio" name="dark_mode" value="auto" x-model="darkMode"
+                           class="text-indigo-600 focus:ring-indigo-500">
+                    <div class="flex items-center gap-2">
+                        <i class="ph-bold ph-clock-afternoon text-violet-500 text-lg"></i>
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">Automatisch (Zeitplan)</p>
+                            <p class="text-xs text-gray-500">Dark Mode in einem bestimmten Zeitfenster</p>
+                        </div>
+                    </div>
+                </label>
+            </div>
+
+            {{-- Zeitfenster-Einstellung (nur bei Auto) --}}
+            <div x-show="darkMode === 'auto'" x-cloak
+                 class="mt-2 p-4 bg-violet-50 border border-violet-200 rounded-xl">
+                <p class="text-xs font-medium text-violet-700 mb-3 flex items-center gap-1.5">
+                    <i class="ph-bold ph-clock text-sm"></i>
+                    Dark Mode aktiv zwischen:
+                </p>
+                <div class="flex items-center gap-3">
+                    <div class="flex-1">
+                        <label class="block text-xs text-gray-600 mb-1">Von</label>
+                        <input type="time" name="dark_mode_from" x-model="darkFrom"
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400">
+                    </div>
+                    <span class="text-gray-400 mt-5">bis</span>
+                    <div class="flex-1">
+                        <label class="block text-xs text-gray-600 mb-1">Bis</label>
+                        <input type="time" name="dark_mode_to" x-model="darkTo"
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400">
+                    </div>
+                </div>
+                <p class="text-xs text-violet-600 mt-2">
+                    <i class="ph-bold ph-info"></i>
+                    Zeitfenster kann über Mitternacht gehen (z.&nbsp;B. 21:00 bis 06:00).
+                </p>
+            </div>
+
+        </div>
+
         <button type="submit"
                 class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-2.5 rounded-lg text-sm">
             Einstellungen speichern
         </button>
     </form>
+    @endif {{-- end isAdmin --}}
 
-    {{-- Passwort ändern --}}
-    <form method="POST" action="{{ route('settings.password') }}" class="mt-2">
+    {{-- Passwort ändern – für alle Nutzer --}}
+    <form method="POST" action="{{ route('settings.password') }}">
         @csrf
         <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
             <h3 class="font-semibold text-gray-700 border-b pb-2">Passwort ändern</h3>
@@ -172,7 +289,7 @@
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Neues Passwort</label>
-                    <input type="password" name="new_password" required placeholder="Mindestens 6 Zeichen"
+                    <input type="password" name="new_password" required placeholder="Mindestens 8 Zeichen"
                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
                 <div>

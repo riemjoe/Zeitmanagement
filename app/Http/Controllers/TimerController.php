@@ -7,15 +7,14 @@ use App\Models\Timer;
 use App\Models\TimeEntry;
 use App\Models\WorkCategory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class TimerController extends Controller
 {
-    /**
-     * Aktuellen Timer-Status als JSON (für Alpine.js Polling).
-     */
+    /** Aktuellen Timer-Status des eingeloggten Nutzers (für Alpine.js Polling). */
     public function status()
     {
-        $timer = Timer::with(['project.customer', 'workCategory'])->first();
+        $timer = $this->activeTimer();
 
         if (!$timer) {
             return response()->json(['running' => false]);
@@ -23,6 +22,7 @@ class TimerController extends Controller
 
         return response()->json([
             'running'      => true,
+            'paused'       => $timer->is_paused,
             'id'           => $timer->id,
             'started_at'   => $timer->started_at->toISOString(),
             'elapsed_s'    => $timer->elapsed_seconds,
@@ -34,9 +34,7 @@ class TimerController extends Controller
         ]);
     }
 
-    /**
-     * Timer starten.
-     */
+    /** Timer starten. */
     public function start(Request $request)
     {
         $data = $request->validate([
@@ -45,10 +43,11 @@ class TimerController extends Controller
             'description'      => 'nullable|string|max:500',
         ]);
 
-        // Ggf. laufenden Timer zuerst beenden
-        Timer::truncate();
+        // Ggf. laufenden Timer dieses Nutzers zuerst beenden
+        $this->clearUserTimers();
 
         $timer = Timer::create([
+            'user_id'          => Auth::id(),
             'project_id'       => $data['project_id'],
             'work_category_id' => $data['work_category_id'],
             'started_at'       => now(),
@@ -70,20 +69,62 @@ class TimerController extends Controller
         ]);
     }
 
-    /**
-     * Timer stoppen und als Zeiteintrag speichern.
-     */
+    /** Timer pausieren. */
+    public function pause()
+    {
+        $timer = $this->activeTimer();
+
+        if (!$timer) {
+            return response()->json(['error' => 'Kein aktiver Timer'], 404);
+        }
+        if ($timer->is_paused) {
+            return response()->json(['error' => 'Timer ist bereits pausiert'], 422);
+        }
+
+        $timer->update(['paused_at' => now()]);
+
+        return response()->json([
+            'running'   => true,
+            'paused'    => true,
+            'elapsed_s' => $timer->fresh()->elapsed_seconds,
+        ]);
+    }
+
+    /** Pausierten Timer fortsetzen. */
+    public function resume()
+    {
+        $timer = $this->activeTimer();
+
+        if (!$timer) {
+            return response()->json(['error' => 'Kein aktiver Timer'], 404);
+        }
+        if (!$timer->is_paused) {
+            return response()->json(['error' => 'Timer ist nicht pausiert'], 422);
+        }
+
+        $pauseDuration = (int) now()->diffInSeconds($timer->paused_at);
+        $timer->update([
+            'paused_seconds' => $timer->paused_seconds + $pauseDuration,
+            'paused_at'      => null,
+        ]);
+
+        return response()->json([
+            'running'   => true,
+            'paused'    => false,
+            'elapsed_s' => $timer->fresh()->elapsed_seconds,
+        ]);
+    }
+
+    /** Timer stoppen und als Zeiteintrag speichern. */
     public function stop(Request $request)
     {
-        $timer = Timer::first();
+        $timer = $this->activeTimer();
 
         if (!$timer) {
             return response()->json(['error' => 'Kein aktiver Timer'], 404);
         }
 
         $hours = max(round($timer->elapsed_seconds / 3600, 2), 0.01);
-
-        // Beschreibung aus Request oder aus Timer übernehmen
         $description = $request->input('description', $timer->description);
 
         $entry = TimeEntry::create([
@@ -103,12 +144,26 @@ class TimerController extends Controller
         ]);
     }
 
-    /**
-     * Timer abbrechen ohne Zeiteintrag.
-     */
+    /** Timer abbrechen ohne Zeiteintrag. */
     public function cancel()
     {
-        Timer::truncate();
+        $this->clearUserTimers();
         return response()->json(['running' => false]);
+    }
+
+    // ── Private Hilfsmethoden ────────────────────────────────────────────
+
+    /** Aktiven Timer des eingeloggten Nutzers laden. */
+    private function activeTimer(): ?Timer
+    {
+        return Timer::with(['project.customer', 'workCategory'])
+            ->where('user_id', Auth::id())
+            ->first();
+    }
+
+    /** Alle Timer des eingeloggten Nutzers löschen. */
+    private function clearUserTimers(): void
+    {
+        Timer::where('user_id', Auth::id())->delete();
     }
 }

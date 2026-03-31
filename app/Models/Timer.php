@@ -9,10 +9,12 @@ class Timer extends Model
 {
     protected $fillable = [
         'project_id', 'work_category_id', 'started_at', 'description',
+        'paused_at', 'paused_seconds',
     ];
 
     protected $casts = [
         'started_at' => 'datetime',
+        'paused_at'  => 'datetime',
     ];
 
     public function project(): BelongsTo
@@ -25,12 +27,21 @@ class Timer extends Model
         return $this->belongsTo(WorkCategory::class);
     }
 
+    /** Timer ist gerade pausiert. */
+    public function getIsPausedAttribute(): bool
+    {
+        return $this->paused_at !== null;
+    }
+
     /**
-     * Vergangene Sekunden seit Start.
+     * Vergangene (aktive) Sekunden – pausierte Zeit wird abgezogen.
+     * Wenn pausiert: zählt bis zum Pausenzeitpunkt.
      */
     public function getElapsedSecondsAttribute(): int
     {
-        return (int) now()->diffInSeconds($this->started_at);
+        $accumulated = (int) ($this->paused_seconds ?? 0);
+        $reference   = $this->paused_at ?? now();
+        return max(0, (int) $reference->diffInSeconds($this->started_at) - $accumulated);
     }
 
     /**
