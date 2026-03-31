@@ -97,4 +97,25 @@ class ProjectController extends Controller
         $project->delete();
         return redirect()->route('projects.index')->with('success', 'Projekt wurde gelöscht.');
     }
+
+    /**
+     * Gibt die offenen Tasks eines Projekts als JSON zurück.
+     * Wird vom Zeiterfassungs-Formular und Timer-Widget per fetch() genutzt.
+     */
+    public function tasksJson(Project $project)
+    {
+        $tasks = $project->tasks()
+            ->with('workCategory')
+            ->where('kanban_status', '!=', 'completed')
+            ->select('id', 'title', 'work_category_id', 'description')
+            ->get()
+            ->map(fn ($t) => [
+                'id'               => $t->id,
+                'title'            => $t->title,
+                'work_category_id' => $t->work_category_id,
+                'description'      => $t->description,
+            ]);
+
+        return response()->json($tasks);
+    }
 }

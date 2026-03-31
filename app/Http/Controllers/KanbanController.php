@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
+use App\Models\WorkCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -32,10 +33,11 @@ class KanbanController extends Controller
             $columns[$status] = $tasks->get($status, collect());
         }
 
-        $projects = Project::with('customer')->orderBy('name')->get();
-        $members  = User::where('is_active', true)->orderBy('name')->get();
+        $projects   = Project::with('customer')->orderBy('name')->get();
+        $members    = User::where('is_active', true)->orderBy('name')->get();
+        $categories = WorkCategory::orderBy('name')->get();
 
-        return view('kanban.index', compact('columns', 'projects', 'members', 'projectFilter'));
+        return view('kanban.index', compact('columns', 'projects', 'members', 'categories', 'projectFilter'));
     }
 
     /** Status + Position einer Aufgabe per AJAX aktualisieren (Drag & Drop) */
@@ -69,13 +71,14 @@ class KanbanController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'project_id'  => 'required|exists:projects,id',
-            'title'       => 'required|string|max:255',
-            'description' => 'nullable|string|max:2000',
-            'priority'    => 'required|in:low,medium,high',
-            'kanban_status' => 'required|in:ready,wip,testing,completed',
-            'assigned_to' => 'nullable|exists:users,id',
-            'due_date'    => 'nullable|date',
+            'project_id'       => 'required|exists:projects,id',
+            'title'            => 'required|string|max:255',
+            'description'      => 'nullable|string|max:2000',
+            'priority'         => 'required|in:low,medium,high',
+            'kanban_status'    => 'required|in:ready,wip,testing,completed',
+            'assigned_to'      => 'nullable|exists:users,id',
+            'due_date'         => 'nullable|date',
+            'work_category_id' => 'nullable|exists:work_categories,id',
         ]);
 
         // Position ans Ende der Zielspalte setzen
@@ -91,12 +94,13 @@ class KanbanController extends Controller
     public function update(Request $request, Task $task)
     {
         $data = $request->validate([
-            'project_id'  => 'required|exists:projects,id',
-            'title'       => 'required|string|max:255',
-            'description' => 'nullable|string|max:2000',
-            'priority'    => 'required|in:low,medium,high',
-            'assigned_to' => 'nullable|exists:users,id',
-            'due_date'    => 'nullable|date',
+            'project_id'       => 'required|exists:projects,id',
+            'title'            => 'required|string|max:255',
+            'description'      => 'nullable|string|max:2000',
+            'priority'         => 'required|in:low,medium,high',
+            'assigned_to'      => 'nullable|exists:users,id',
+            'due_date'         => 'nullable|date',
+            'work_category_id' => 'nullable|exists:work_categories,id',
         ]);
 
         $task->update($data);

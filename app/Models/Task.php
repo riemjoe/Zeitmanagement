@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Task extends Model
 {
     protected $fillable = [
-        'project_id', 'assigned_to', 'title', 'description',
+        'project_id', 'assigned_to', 'work_category_id', 'title', 'description',
         'priority', 'kanban_status', 'position', 'due_date',
     ];
 
@@ -25,6 +25,11 @@ class Task extends Model
     public function assignedUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function workCategory(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\WorkCategory::class);
     }
 
     /** Lesbare Status-Labels */

@@ -269,6 +269,38 @@
     </form>
     @endif {{-- end isAdmin --}}
 
+    {{-- E-Mail-Test – nur für Admins --}}
+    @if(auth()->user()->isAdmin())
+    <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-3">
+        <h3 class="font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+            <i class="ph-bold ph-paper-plane-tilt text-indigo-500"></i>
+            E-Mail-Versand testen
+        </h3>
+        <p class="text-sm text-gray-500">
+            Sendet sofort eine Test-Wartungserinnerung an <strong>{{ auth()->user()->email }}</strong>,
+            um zu prüfen ob der E-Mail-Versand korrekt konfiguriert ist.
+        </p>
+        @if(config('mail.default') === 'log')
+        <div class="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800">
+            <i class="ph-bold ph-warning shrink-0 mt-0.5"></i>
+            <span>
+                <strong>Hinweis:</strong> <code>MAIL_MAILER=log</code> ist aktiv – E-Mails werden nicht wirklich versendet,
+                sondern in <code>storage/logs/laravel.log</code> geschrieben.
+                Für echten Versand SMTP in der <code>.env</code> konfigurieren.
+            </span>
+        </div>
+        @endif
+        <form method="POST" action="{{ route('settings.test-mail') }}">
+            @csrf
+            <button type="submit"
+                    class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors">
+                <i class="ph-bold ph-paper-plane-tilt"></i>
+                Test-E-Mail senden
+            </button>
+        </form>
+    </div>
+    @endif
+
     {{-- Passwort ändern – für alle Nutzer --}}
     <form method="POST" action="{{ route('settings.password') }}">
         @csrf

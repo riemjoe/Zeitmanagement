@@ -49,6 +49,18 @@ class Project extends Model
         return $this->tasks();
     }
 
+    /** Wiederkehrende Aufgaben-Vorlagen des Projekts. */
+    public function recurringTasks(): HasMany
+    {
+        return $this->hasMany(RecurringTask::class)->orderBy('title');
+    }
+
+    /** Wartungsplan-Ereignisse des Projekts. */
+    public function maintenanceEvents(): HasMany
+    {
+        return $this->hasMany(\App\Models\MaintenanceEvent::class)->orderBy('scheduled_date');
+    }
+
     public function quote(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Quote::class);

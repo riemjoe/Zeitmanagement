@@ -2,10 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\MaintenanceReminder;
+use App\Models\MaintenanceEvent;
+use App\Models\Project;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 
 class SettingController extends Controller
@@ -105,5 +110,48 @@ class SettingController extends Controller
         $user->update(['password' => Hash::make($request->new_password)]);
 
         return redirect()->route('settings.edit')->with('success', 'Passwort wurde geändert.');
+    }
+
+    /**
+     * Sendet sofort eine Test-Wartungserinnerung an den eingeloggten Admin,
+     * um E-Mail-Versand und Konfiguration zu prüfen.
+     * Legt dafür ein temporäres MaintenanceEvent an, das danach wieder gelöscht wird.
+     */
+    public function testMail(Request $request)
+    {
+        // Erstes verfügbares Projekt als Platzhalter nehmen
+        $project = Project::first();
+
+        if (!$project) {
+            return redirect()->route('settings.edit')
+                ->with('error', 'Kein Projekt vorhanden. Bitte zuerst ein Projekt anlegen.');
+        }
+
+        // Temporäres Test-Event (+1 Minute, damit der Zeitpunkt realistisch wirkt)
+        $event = new MaintenanceEvent([
+            'project_id'     => $project->id,
+            'title'          => '🔧 Test-Wartungserinnerung',
+            'description'    => 'Dies ist eine automatisch generierte Test-Nachricht, um den E-Mail-Versand zu prüfen.',
+            'scheduled_date' => now()->toDateString(),
+            'scheduled_time' => now()->addMinute()->format('H:i:s'),
+            'priority'       => 'medium',
+            'notify'         => true,
+        ]);
+        // Relation manuell setzen (kein DB-Save nötig)
+        $event->setRelation('project', $project);
+        $event->setRelation('assignedUser', null);
+
+        try {
+            Mail::to(Auth::user()->email)
+                ->send(new MaintenanceReminder($event));
+
+            return redirect()->route('settings.edit')
+                ->with('success', 'Test-E-Mail wurde erfolgreich an ' . Auth::user()->email . ' gesendet.');
+        } catch (\Throwable $e) {
+            Log::error('Test-Mail fehlgeschlagen: ' . $e->getMessage());
+
+            return redirect()->route('settings.edit')
+                ->with('error', 'E-Mail-Versand fehlgeschlagen: ' . $e->getMessage());
+        }
     }
 }

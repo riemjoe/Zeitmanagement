@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Zeitmanagement') – ZeitManager</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/favicon.ico" sizes="any">{{-- Fallback für ältere Browser --}}
     <script src="https://cdn.tailwindcss.com"></script>
     <script>tailwind.config = { darkMode: 'class' }</script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -46,87 +48,200 @@
             main { margin: 0 !important; padding: 0 !important; }
         }
 
-        /* ── Dark Mode Overrides ───────────────────────────────── */
-        /* Base */
-        .dark body                                 { background-color: #0f172a; color: #e2e8f0; }
-        .dark main                                 { background-color: #0f172a; }
-        /* Backgrounds */
-        .dark .bg-white                            { background-color: #1e293b !important; }
-        .dark .bg-gray-50                          { background-color: #0f172a !important; }
-        .dark .bg-gray-100                         { background-color: #1e293b !important; }
-        .dark .bg-gray-200                         { background-color: #334155 !important; }
-        .dark .bg-gray-700                         { background-color: #334155 !important; }
-        .dark .bg-gray-800                         { background-color: #1e293b !important; }
-        /* Borders */
-        .dark .border-gray-100                     { border-color: #1e293b !important; }
-        .dark .border-gray-200                     { border-color: #334155 !important; }
-        .dark .border-gray-300                     { border-color: #475569 !important; }
-        .dark .border-b                            { border-color: #334155; }
-        .dark .border-t                            { border-color: #334155; }
-        .dark .border                              { border-color: #334155; }
-        /* Text – in dark mode lighter shades map to lighter values */
-        .dark .text-gray-900                       { color: #f1f5f9 !important; }
-        .dark .text-gray-800                       { color: #e2e8f0 !important; }
-        .dark .text-gray-700                       { color: #cbd5e1 !important; }
-        .dark .text-gray-600                       { color: #94a3b8 !important; }
-        .dark .text-gray-500                       { color: #94a3b8 !important; }
-        .dark .text-gray-400                       { color: #64748b !important; }
-        .dark h1, .dark h2, .dark h3, .dark h4     { color: #e2e8f0; }
-        .dark label                                { color: #cbd5e1; }
-        .dark p                                    { color: #cbd5e1; }
-        /* Dividers */
-        .dark .divide-gray-200 > * + *             { border-color: #334155 !important; }
-        .dark .divide-gray-100 > * + *             { border-color: #1e293b !important; }
-        /* Header / Topbar */
-        .dark header.bg-white                      { background-color: #1e293b !important; border-color: #334155 !important; }
-        /* Cards & Panels */
-        .dark .rounded-xl.border                   { border-color: #334155 !important; }
-        .dark .rounded-lg.border                   { border-color: #334155 !important; }
-        .dark .shadow, .dark .shadow-sm, .dark .shadow-lg, .dark .shadow-xl { box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
-        /* Tables */
-        .dark table                                { background-color: #1e293b; }
-        .dark thead                                { background-color: #0f172a !important; }
-        .dark th                                   { color: #94a3b8 !important; border-color: #334155 !important; }
-        .dark td                                   { border-color: #334155 !important; color: #e2e8f0; }
-        .dark tbody tr:hover                       { background-color: #0f172a !important; }
-        .dark tbody tr                             { border-color: #334155; }
-        /* Inputs, Textarea, Select */
-        .dark input:not([type=checkbox]):not([type=radio]),
+        /* ═══════════════════════════════════════════════════════════
+           Dark Mode – umfassende Overrides
+           Palette:
+             Hintergrund tief  : #0a0f1e  (fast schwarz)
+             Hintergrund dunkel: #0f172a  (slate-900)
+             Karte / Panel     : #1e293b  (slate-800)
+             Karte erhöht      : #263248  (slate-750)
+             Rand               : #2d3f55  (slate-700ish)
+             Rand hell          : #334155  (slate-700)
+             Text primär        : #f1f5f9  (slate-100)
+             Text sekundär      : #cbd5e1  (slate-300)
+             Text gedimmt       : #94a3b8  (slate-400)
+             Text sehr gedimmt  : #64748b  (slate-500)
+        ════════════════════════════════════════════════════════════ */
+
+        /* ── Basis ───────────────────────────────────────────────── */
+        .dark body                                   { background-color: #0f172a; color: #e2e8f0; }
+        .dark main                                   { background-color: #0f172a; }
+
+        /* ── Grau-Hintergründe ──────────────────────────────────── */
+        .dark .bg-white                              { background-color: #1e293b !important; }
+        .dark .bg-gray-50                            { background-color: #0f172a !important; }
+        .dark .bg-gray-100                           { background-color: #263248 !important; }
+        .dark .bg-gray-200                           { background-color: #334155 !important; }
+        .dark .bg-gray-300                           { background-color: #475569 !important; }
+        .dark .bg-gray-700                           { background-color: #334155 !important; }
+        .dark .bg-gray-800                           { background-color: #1e293b !important; }
+
+        /* ── Grau-Ränder ────────────────────────────────────────── */
+        .dark .border-gray-50                        { border-color: #1a2438 !important; }
+        .dark .border-gray-100                       { border-color: #263248 !important; }
+        .dark .border-gray-200                       { border-color: #334155 !important; }
+        .dark .border-gray-300                       { border-color: #475569 !important; }
+        .dark .border-gray-400                       { border-color: #64748b !important; }
+        .dark .border-b                              { border-color: #2d3f55; }
+        .dark .border-t                              { border-color: #2d3f55; }
+        .dark .border-l                              { border-color: #2d3f55; }
+        .dark .border-r                              { border-color: #2d3f55; }
+        .dark .border                                { border-color: #334155; }
+
+        /* ── Grau-Text ──────────────────────────────────────────── */
+        .dark .text-gray-900                         { color: #f1f5f9 !important; }
+        .dark .text-gray-800                         { color: #e2e8f0 !important; }
+        .dark .text-gray-700                         { color: #cbd5e1 !important; }
+        .dark .text-gray-600                         { color: #94a3b8 !important; }
+        .dark .text-gray-500                         { color: #94a3b8 !important; }
+        .dark .text-gray-400                         { color: #64748b !important; }
+        .dark .text-gray-300                         { color: #94a3b8 !important; }
+        .dark h1, .dark h2, .dark h3, .dark h4       { color: #e2e8f0; }
+        .dark label                                  { color: #cbd5e1; }
+        .dark p                                      { color: #cbd5e1; }
+
+        /* ── Divider ────────────────────────────────────────────── */
+        .dark .divide-gray-200 > * + *               { border-color: #334155 !important; }
+        .dark .divide-gray-100 > * + *               { border-color: #263248 !important; }
+        .dark .divide-gray-50  > * + *               { border-color: #1a2438 !important; }
+        .dark .divide-y > * + *                      { border-color: #2d3f55; }
+
+        /* ── Topbar ─────────────────────────────────────────────── */
+        .dark header.bg-white                        { background-color: #1e293b !important; border-color: #334155 !important; }
+
+        /* ── Karten & Panels ────────────────────────────────────── */
+        .dark .rounded-xl.border                     { border-color: #334155 !important; }
+        .dark .rounded-lg.border                     { border-color: #334155 !important; }
+        .dark .shadow,
+        .dark .shadow-sm                             { box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+        .dark .shadow-lg,
+        .dark .shadow-xl,
+        .dark .shadow-2xl                            { box-shadow: 0 4px 20px rgba(0,0,0,0.6); }
+
+        /* ── Tabellen ───────────────────────────────────────────── */
+        .dark table                                  { background-color: #1e293b; }
+        .dark thead                                  { background-color: #0f172a !important; }
+        .dark th                                     { color: #94a3b8 !important; border-color: #334155 !important; background-color: #0f172a !important; }
+        .dark td                                     { border-color: #334155 !important; color: #e2e8f0; }
+        .dark tbody tr:hover                         { background-color: #263248 !important; }
+        .dark tbody tr                               { border-color: #334155; }
+
+        /* ── Inputs / Textarea / Select ─────────────────────────── */
+        .dark input:not([type=checkbox]):not([type=radio]):not([type=range]),
         .dark textarea,
-        .dark select                              { background-color: #0f172a !important; color: #e2e8f0 !important; border-color: #475569 !important; }
+        .dark select                                 { background-color: #0f172a !important; color: #e2e8f0 !important; border-color: #475569 !important; }
+        .dark input:not([type=checkbox]):not([type=radio]):focus,
+        .dark textarea:focus,
+        .dark select:focus                           { border-color: #6366f1 !important; box-shadow: 0 0 0 2px rgba(99,102,241,0.25) !important; }
         .dark input::placeholder,
-        .dark textarea::placeholder               { color: #475569 !important; }
-        /* Pre/Code */
-        .dark pre                                 { background-color: #0f172a !important; color: #e2e8f0 !important; border-color: #334155 !important; }
-        .dark code                                { background-color: #1e293b; color: #a5b4fc; }
-        /* Colored backgrounds (badges, alerts) */
-        .dark .bg-blue-50                         { background-color: #1e3a5f !important; }
-        .dark .bg-green-50                        { background-color: #14291e !important; }
-        .dark .bg-red-50                          { background-color: #2d1515 !important; }
-        .dark .bg-amber-50                        { background-color: #2d2008 !important; }
-        .dark .bg-yellow-50                       { background-color: #2d2008 !important; }
-        .dark .bg-indigo-50                       { background-color: #1e1f4a !important; }
-        .dark .bg-purple-50                       { background-color: #251535 !important; }
-        .dark .bg-violet-50                       { background-color: #1e1535 !important; }
-        .dark .border-green-200                   { border-color: #166534 !important; }
-        .dark .border-red-200                     { border-color: #7f1d1d !important; }
-        .dark .border-amber-200                   { border-color: #78350f !important; }
-        .dark .border-yellow-200                  { border-color: #78350f !important; }
-        .dark .border-indigo-200                  { border-color: #3730a3 !important; }
-        .dark .border-violet-200                  { border-color: #4c1d95 !important; }
-        .dark .text-violet-600, .dark .text-violet-700 { color: #a78bfa !important; }
-        /* Dropdown & popup panels */
+        .dark textarea::placeholder                  { color: #475569 !important; }
+        .dark select option                          { background-color: #1e293b; color: #e2e8f0; }
+
+        /* ── Pre / Code ─────────────────────────────────────────── */
+        .dark pre                                    { background-color: #0f172a !important; color: #e2e8f0 !important; border-color: #334155 !important; }
+        .dark code                                   { background-color: #263248; color: #a5b4fc; }
+
+        /* ── Hover-States ───────────────────────────────────────── */
+        .dark .hover\:bg-gray-50:hover               { background-color: #263248 !important; }
+        .dark .hover\:bg-gray-100:hover              { background-color: #334155 !important; }
+        .dark .hover\:bg-gray-200:hover              { background-color: #475569 !important; }
+        .dark .hover\:bg-gray-800:hover              { background-color: #334155 !important; }
+        .dark .hover\:text-gray-800:hover            { color: #f1f5f9 !important; }
+        .dark .hover\:text-gray-700:hover            { color: #e2e8f0 !important; }
+        .dark .hover\:text-gray-900:hover            { color: #f8fafc !important; }
+
+        /* ── Dropdowns & Popup-Panels ───────────────────────────── */
         .dark .z-50.bg-white,
-        .dark .z-50.border.bg-white               { background-color: #1e293b !important; border-color: #334155 !important; }
-        .dark .absolute.bg-white.border           { background-color: #1e293b !important; border-color: #334155 !important; }
-        .dark .shadow-lg.bg-white                 { background-color: #1e293b !important; border-color: #334155 !important; }
-        /* Hover states */
-        .dark .hover\:bg-gray-50:hover            { background-color: #1e293b !important; }
-        .dark .hover\:bg-gray-100:hover           { background-color: #334155 !important; }
-        .dark .hover\:bg-gray-800:hover           { background-color: #334155 !important; }
-        /* Flash messages */
-        .dark .bg-green-50.border-green-200       { background-color: #14291e !important; border-color: #166534 !important; }
-        .dark .bg-red-50.border-red-200           { background-color: #2d1515 !important; border-color: #7f1d1d !important; }
+        .dark .z-50.border.bg-white                  { background-color: #1e293b !important; border-color: #334155 !important; }
+        .dark .absolute.bg-white.border              { background-color: #1e293b !important; border-color: #334155 !important; }
+        .dark .shadow-lg.bg-white                    { background-color: #1e293b !important; }
+        .dark .rounded-2xl.bg-white                  { background-color: #1e293b !important; }
+
+        /* ── Timer-Widget (Topbar) ──────────────────────────────── */
+        .dark .bg-gray-100.border.border-gray-200    { background-color: #263248 !important; border-color: #475569 !important; }
+        .dark .bg-amber-100.border.border-amber-200  { background-color: #2d2008 !important; border-color: #78350f !important; }
+
+        /* ── Farbige Hintergründe ───────────────────────────────── */
+        /* Blau */
+        .dark .bg-blue-50                            { background-color: #172554 !important; }
+        .dark .bg-blue-100                           { background-color: #1e3a5f !important; }
+        /* Grün */
+        .dark .bg-green-50                           { background-color: #052e16 !important; }
+        .dark .bg-green-100                          { background-color: #14291e !important; }
+        /* Rot */
+        .dark .bg-red-50                             { background-color: #2d1515 !important; }
+        .dark .bg-red-100                            { background-color: #3b1717 !important; }
+        /* Amber / Yellow */
+        .dark .bg-amber-50                           { background-color: #2d2008 !important; }
+        .dark .bg-amber-100                          { background-color: #3d2a0a !important; }
+        .dark .bg-yellow-50                          { background-color: #2d2008 !important; }
+        .dark .bg-yellow-100                         { background-color: #3d2a0a !important; }
+        /* Indigo / Violet */
+        .dark .bg-indigo-50                          { background-color: #1e1f4a !important; }
+        .dark .bg-indigo-100                         { background-color: #252660 !important; }
+        .dark .bg-violet-50                          { background-color: #1e1535 !important; }
+        .dark .bg-violet-100                         { background-color: #251545 !important; }
+        /* Purple */
+        .dark .bg-purple-50                          { background-color: #251535 !important; }
+        .dark .bg-purple-100                         { background-color: #2e1a42 !important; }
+        /* Emerald / Teal */
+        .dark .bg-emerald-50                         { background-color: #052e16 !important; }
+        .dark .bg-teal-50                            { background-color: #042f2e !important; }
+
+        /* ── Farbige Ränder ─────────────────────────────────────── */
+        .dark .border-blue-100                       { border-color: #1e3a5f !important; }
+        .dark .border-blue-200                       { border-color: #1e40af !important; }
+        .dark .border-green-100                      { border-color: #14532d !important; }
+        .dark .border-green-200                      { border-color: #166534 !important; }
+        .dark .border-green-300                      { border-color: #15803d !important; }
+        .dark .border-red-100                        { border-color: #7f1d1d !important; }
+        .dark .border-red-200                        { border-color: #991b1b !important; }
+        .dark .border-amber-100                      { border-color: #78350f !important; }
+        .dark .border-amber-200                      { border-color: #92400e !important; }
+        .dark .border-yellow-100                     { border-color: #78350f !important; }
+        .dark .border-yellow-200                     { border-color: #92400e !important; }
+        .dark .border-indigo-100                     { border-color: #312e81 !important; }
+        .dark .border-indigo-200                     { border-color: #3730a3 !important; }
+        .dark .border-violet-100                     { border-color: #4c1d95 !important; }
+        .dark .border-violet-200                     { border-color: #5b21b6 !important; }
+
+        /* ── Farbiger Text ──────────────────────────────────────── */
+        .dark .text-red-600                          { color: #fca5a5 !important; }
+        .dark .text-red-700                          { color: #fca5a5 !important; }
+        .dark .text-red-500                          { color: #f87171 !important; }
+        .dark .text-amber-600                        { color: #fcd34d !important; }
+        .dark .text-amber-700                        { color: #fcd34d !important; }
+        .dark .text-amber-800                        { color: #fbbf24 !important; }
+        .dark .text-yellow-600                       { color: #fcd34d !important; }
+        .dark .text-green-600                        { color: #86efac !important; }
+        .dark .text-green-700                        { color: #86efac !important; }
+        .dark .text-green-500                        { color: #4ade80 !important; }
+        .dark .text-blue-600                         { color: #93c5fd !important; }
+        .dark .text-blue-700                         { color: #93c5fd !important; }
+        .dark .text-indigo-600                       { color: #a5b4fc !important; }
+        .dark .text-indigo-700                       { color: #a5b4fc !important; }
+        .dark .text-violet-600,
+        .dark .text-violet-700                       { color: #c4b5fd !important; }
+        .dark .text-purple-600,
+        .dark .text-purple-700                       { color: #d8b4fe !important; }
+        .dark .text-emerald-600                      { color: #6ee7b7 !important; }
+        .dark .text-teal-600                         { color: #5eead4 !important; }
+
+        /* ── Flash Messages ─────────────────────────────────────── */
+        .dark .bg-green-50.border-green-200          { background-color: #052e16 !important; border-color: #166534 !important; }
+        .dark .text-green-800                        { color: #86efac !important; }
+        .dark .bg-red-50.border-red-200              { background-color: #2d1515 !important; border-color: #991b1b !important; }
+        .dark .text-red-800                          { color: #fca5a5 !important; }
+        .dark .bg-amber-50.border-amber-200          { background-color: #2d2008 !important; border-color: #92400e !important; }
+        .dark .text-amber-800                        { color: #fbbf24 !important; }
+        .dark .bg-blue-50.border-blue-200            { background-color: #172554 !important; border-color: #1e40af !important; }
+        .dark .text-blue-800                         { color: #93c5fd !important; }
+
+        /* ── Scrollbar (Webkit) ─────────────────────────────────── */
+        .dark ::-webkit-scrollbar                    { width: 8px; height: 8px; }
+        .dark ::-webkit-scrollbar-track              { background: #0f172a; }
+        .dark ::-webkit-scrollbar-thumb              { background: #334155; border-radius: 4px; }
+        .dark ::-webkit-scrollbar-thumb:hover        { background: #475569; }
     </style>
     @stack('styles')
 </head>
@@ -366,11 +481,24 @@
                                 <div>
                                     <label class="block text-xs text-gray-500 mb-1">Projekt</label>
                                     <select x-model="startProject"
+                                            @change="loadStartTasks()"
                                             class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
                                         <option value="">– wählen –</option>
                                         @foreach($allProjects as $p)
                                         <option value="{{ $p->id }}">{{ $p->name }} ({{ $p->customer->name }})</option>
                                         @endforeach
+                                    </select>
+                                </div>
+                                {{-- Aufgabe (wird nach Projekt-Auswahl befüllt) --}}
+                                <div x-show="startTasks.length > 0" x-cloak>
+                                    <label class="block text-xs text-gray-500 mb-1">Aufgabe <span class="text-gray-400">(optional)</span></label>
+                                    <select x-model="startTask"
+                                            @change="applyStartTask()"
+                                            class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                                        <option value="">– keine Aufgabe –</option>
+                                        <template x-for="t in startTasks" :key="t.id">
+                                            <option :value="t.id" x-text="t.title"></option>
+                                        </template>
                                     </select>
                                 </div>
                                 <div>
@@ -384,7 +512,7 @@
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="block text-xs text-gray-500 mb-1">Beschreibung (optional)</label>
+                                    <label class="block text-xs text-gray-500 mb-1">Beschreibung <span class="text-gray-400">(optional)</span></label>
                                     <input type="text" x-model="startDescription" placeholder="Woran arbeitest du?"
                                            class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
                                 </div>
@@ -568,6 +696,8 @@ function timerWidget(initialRunning, initialElapsed, initialProject, initialCate
         showOverlay:      false,
         stopDescription:  '',
         startProject:     '',
+        startTask:        '',
+        startTasks:       [],
         startCategory:    '',
         startDescription: '',
         _interval:        null,
@@ -592,6 +722,25 @@ function timerWidget(initialRunning, initialElapsed, initialProject, initialCate
 
         formatMoney(val) {
             return Number(val).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
+
+        async loadStartTasks() {
+            this.startTask  = '';
+            this.startTasks = [];
+            if (!this.startProject) return;
+            try {
+                const res = await fetch(`/projects/${this.startProject}/tasks-json`, {
+                    headers: { 'Accept': 'application/json' },
+                });
+                this.startTasks = await res.json();
+            } catch {}
+        },
+
+        applyStartTask() {
+            const task = this.startTasks.find(t => t.id == this.startTask);
+            if (!task) return;
+            if (task.work_category_id) this.startCategory   = String(task.work_category_id);
+            if (task.description)      this.startDescription = task.description;
         },
 
         async startTimer() {

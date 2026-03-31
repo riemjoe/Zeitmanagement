@@ -18,6 +18,8 @@ use App\Http\Controllers\ProjectTodoController;
 use App\Http\Controllers\ContractController;
 use App\Http\Controllers\ContractTemplateController;
 use App\Http\Controllers\KanbanController;
+use App\Http\Controllers\MaintenanceController;
+use App\Http\Controllers\RecurringTaskController;
 
 // ── Authentifizierung (öffentlich) ──────────────────────────────────────────
 Route::get('/login',   [AuthController::class, 'showLogin'])->name('login');
@@ -35,6 +37,8 @@ Route::middleware('auth.simple')->group(function () {
 
     // Projekte
     Route::resource('projects', ProjectController::class);
+    // Tasks eines Projekts als JSON (für Zeiterfassungs-Selektor)
+    Route::get('/projects/{project}/tasks-json', [ProjectController::class, 'tasksJson'])->name('projects.tasks-json');
 
     // Arbeitskategorien
     Route::resource('work-categories', WorkCategoryController::class)
@@ -71,12 +75,25 @@ Route::middleware('auth.simple')->group(function () {
     // Vertragsvorlagen
     Route::resource('contract-templates', ContractTemplateController::class);
 
+    // Wiederkehrende Aufgaben
+    Route::post('/projects/{project}/recurring-tasks',            [RecurringTaskController::class, 'store'])->name('recurring-tasks.store');
+    Route::put('/recurring-tasks/{recurringTask}',                [RecurringTaskController::class, 'update'])->name('recurring-tasks.update');
+    Route::delete('/recurring-tasks/{recurringTask}',             [RecurringTaskController::class, 'destroy'])->name('recurring-tasks.destroy');
+    Route::post('/recurring-tasks/{recurringTask}/run-now',       [RecurringTaskController::class, 'runNow'])->name('recurring-tasks.run-now');
+
     // Kanban-Board
     Route::get('/kanban',                           [KanbanController::class, 'index'])->name('kanban.index');
     Route::post('/kanban/tasks',                    [KanbanController::class, 'store'])->name('kanban.store');
     Route::patch('/kanban/tasks/{task}/status',     [KanbanController::class, 'updateStatus'])->name('kanban.update-status');
     Route::put('/kanban/tasks/{task}',              [KanbanController::class, 'update'])->name('kanban.update');
     Route::delete('/kanban/tasks/{task}',           [KanbanController::class, 'destroy'])->name('kanban.destroy');
+
+    // Wartungsplan
+    Route::get('/projects/{project}/maintenance',                       [MaintenanceController::class, 'index'])->name('maintenance.index');
+    Route::post('/projects/{project}/maintenance',                      [MaintenanceController::class, 'store'])->name('maintenance.store');
+    Route::put('/maintenance/{maintenanceEvent}',                       [MaintenanceController::class, 'update'])->name('maintenance.update');
+    Route::patch('/maintenance/{maintenanceEvent}/toggle',              [MaintenanceController::class, 'toggle'])->name('maintenance.toggle');
+    Route::delete('/maintenance/{maintenanceEvent}',                    [MaintenanceController::class, 'destroy'])->name('maintenance.destroy');
 
     // Projekt-ToDos
     Route::post('/projects/{project}/todos',    [ProjectTodoController::class, 'store'])->name('project-todos.store');
@@ -99,6 +116,7 @@ Route::middleware('auth.simple')->group(function () {
 
     // Einstellungen – Unternehmenseinstellungen nur für Admins
     Route::middleware('ensure.admin')->group(function () {
+        Route::post('/settings/test-mail', [SettingController::class, 'testMail'])->name('settings.test-mail');
         Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
 
         // Team-Verwaltung

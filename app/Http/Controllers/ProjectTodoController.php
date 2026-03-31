@@ -15,21 +15,23 @@ class ProjectTodoController extends Controller
     public function store(Request $request, Project $project)
     {
         $data = $request->validate([
-            'title'         => 'required|string|max:255',
-            'description'   => 'nullable|string|max:2000',
-            'kanban_status' => 'nullable|in:ready,wip,testing,completed',
-            'priority'      => 'nullable|in:low,medium,high',
+            'title'            => 'required|string|max:255',
+            'description'      => 'nullable|string|max:2000',
+            'kanban_status'    => 'nullable|in:ready,wip,testing,completed',
+            'priority'         => 'nullable|in:low,medium,high',
+            'work_category_id' => 'nullable|exists:work_categories,id',
         ]);
 
         $maxPos = $project->tasks()->max('position') ?? -1;
 
         $task = Task::create([
-            'project_id'    => $project->id,
-            'title'         => $data['title'],
-            'description'   => $data['description'] ?? null,
-            'kanban_status' => $data['kanban_status'] ?? 'ready',
-            'priority'      => $data['priority'] ?? 'medium',
-            'position'      => $maxPos + 1,
+            'project_id'       => $project->id,
+            'title'            => $data['title'],
+            'description'      => $data['description'] ?? null,
+            'kanban_status'    => $data['kanban_status'] ?? 'ready',
+            'priority'         => $data['priority'] ?? 'medium',
+            'work_category_id' => $data['work_category_id'] ?? null,
+            'position'         => $maxPos + 1,
         ]);
 
         if ($request->wantsJson()) {

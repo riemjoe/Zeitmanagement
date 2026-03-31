@@ -6,11 +6,19 @@
        class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg">+ Zeiteintrag</a>
     <a href="{{ route('expenses.create') }}?project_id={{ $project->id }}"
        class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg">+ Ausgabe</a>
+    <a href="{{ route('maintenance.index', $project) }}"
+       class="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+        <i class="ph-bold ph-wrench text-sm"></i> Wartungsplan
+    </a>
     <a href="{{ route('projects.edit', $project) }}"
        class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg">Bearbeiten</a>
 @endsection
 
 @section('content')
+@php
+    $members    = \App\Models\User::where('is_active', true)->orderBy('name')->get();
+    $categories = \App\Models\WorkCategory::orderBy('name')->get();
+@endphp
 @php
     $deadlineDays   = $project->days_until_deadline;
     $deadlineColor  = match(true) {
@@ -164,6 +172,13 @@
                     <option value="medium">Mittel</option>
                     <option value="high">Hoch</option>
                 </select>
+                <select x-model="newCategory"
+                        class="border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400 bg-white">
+                    <option value="">Kategorie …</option>
+                    @foreach($categories as $cat)
+                    <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                    @endforeach
+                </select>
                 <button type="submit"
                         class="ml-auto bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors shrink-0">
                     Hinzufügen
@@ -234,6 +249,182 @@
         <div class="w-full bg-gray-100 rounded-full h-1.5">
             <div class="h-1.5 rounded-full bg-green-500 transition-all"
                  :style="'width: ' + (todos.length ? Math.round(todos.filter(t => t.completed).length / todos.length * 100) : 0) + '%'">
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Wiederkehrende Aufgaben --}}
+<div class="bg-white rounded-xl border border-gray-200 mb-6"
+     x-data="{ open: {{ $project->recurringTasks->isNotEmpty() ? 'true' : 'false' }}, showForm: false, editId: null, editData: {} }">
+
+    {{-- Header --}}
+    <button @click="open = !open"
+            class="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors rounded-xl">
+        <div class="flex items-center gap-3">
+            <i class="ph-bold ph-repeat text-indigo-500 text-lg"></i>
+            <h3 class="font-semibold text-gray-800">Wiederkehrende Aufgaben</h3>
+            @if($project->recurringTasks->isNotEmpty())
+            <span class="text-xs bg-indigo-100 text-indigo-700 font-medium px-2 py-0.5 rounded-full">
+                {{ $project->recurringTasks->count() }}
+            </span>
+            @endif
+        </div>
+        <i class="ph-bold text-gray-400 transition-transform duration-200"
+           :class="open ? 'ph-caret-up' : 'ph-caret-down'"></i>
+    </button>
+
+    <div x-show="open" x-cloak x-transition>
+
+        {{-- Vorlagen-Liste --}}
+        @if($project->recurringTasks->isNotEmpty())
+        <div class="divide-y divide-gray-50 border-t border-gray-100">
+            @foreach($project->recurringTasks as $rt)
+            @php
+                $rtData = [
+                    'title'              => $rt->title,
+                    'description'        => $rt->description ?? '',
+                    'priority'           => $rt->priority,
+                    'kanban_status'      => $rt->kanban_status,
+                    'assigned_to'        => $rt->assigned_to,
+                    'frequency'          => $rt->frequency,
+                    'frequency_interval' => $rt->frequency_interval,
+                    'day_of_week'        => $rt->day_of_week,
+                    'day_of_month'       => $rt->day_of_month,
+                    'due_days_offset'    => $rt->due_days_offset,
+                    'time_of_day'        => $rt->time_of_day ? substr($rt->time_of_day, 0, 5) : '06:00',
+                    'is_active'          => $rt->is_active,
+                    'is_maintenance'     => $rt->is_maintenance,
+                ];
+                $pDot = match($rt->priority) { 'high' => 'bg-red-500', 'medium' => 'bg-amber-400', default => 'bg-gray-400' };
+            @endphp
+            <div class="px-5 py-3 flex items-center gap-3 group">
+                {{-- Aktiv-Indikator --}}
+                <span class="shrink-0 w-2 h-2 rounded-full {{ $rt->is_active ? 'bg-green-400' : 'bg-gray-300' }}"
+                      title="{{ $rt->is_active ? 'Aktiv' : 'Inaktiv' }}"></span>
+
+                {{-- Info --}}
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-800 truncate flex items-center gap-1.5">
+                        {{ $rt->title }}
+                        @if($rt->is_maintenance)
+                        <span class="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 shrink-0">
+                            <i class="ph-bold ph-wrench text-[9px]"></i> Wartung
+                        </span>
+                        @endif
+                    </p>
+                    <p class="text-xs text-gray-400 mt-0.5 flex items-center gap-2 flex-wrap">
+                        <span class="flex items-center gap-1">
+                            <i class="ph-bold ph-repeat text-xs"></i>
+                            {{ $rt->schedule_summary }}
+                        </span>
+                        @if($rt->next_run_at)
+                        <span class="flex items-center gap-1">
+                            <i class="ph-bold ph-calendar text-xs"></i>
+                            Nächste: {{ $rt->next_run_at->format('d.m.Y') }}
+                        </span>
+                        @endif
+                        @if($rt->last_run_at)
+                        <span class="text-gray-300">Zuletzt: {{ $rt->last_run_at->format('d.m.Y') }}</span>
+                        @endif
+                    </p>
+                </div>
+
+                {{-- Priorität --}}
+                <span class="shrink-0 w-2 h-2 rounded-full {{ $pDot }}"
+                      title="{{ $rt->priority_label ?? $rt->priority }}"></span>
+
+                {{-- Aktionen --}}
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {{-- Jetzt ausführen --}}
+                    <form method="POST" action="{{ route('recurring-tasks.run-now', $rt) }}" class="inline">
+                        @csrf
+                        <button type="submit" title="Jetzt einen Task erstellen"
+                                class="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors">
+                            <i class="ph-bold ph-play text-sm"></i>
+                        </button>
+                    </form>
+
+                    {{-- Bearbeiten --}}
+                    <button @click="editId = {{ $rt->id }}; editData = {{ json_encode($rtData) }}; showForm = true; open = true"
+                            title="Bearbeiten"
+                            class="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors">
+                        <i class="ph-bold ph-pencil-simple text-sm"></i>
+                    </button>
+
+                    {{-- Löschen --}}
+                    <form method="POST" action="{{ route('recurring-tasks.destroy', $rt) }}" class="inline"
+                          onsubmit="return confirm('Vorlage löschen?')">
+                        @csrf @method('DELETE')
+                        <button type="submit" title="Löschen"
+                                class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors">
+                            <i class="ph-bold ph-trash text-sm"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            @endforeach
+        </div>
+        @endif
+
+        {{-- Neue Vorlage anlegen / Bearbeiten --}}
+        <div class="border-t border-gray-100 px-5 py-3">
+            <button @click="showForm = !showForm; if (!showForm) { editId = null; editData = {} }"
+                    x-show="!showForm"
+                    class="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1.5 transition-colors">
+                <i class="ph-bold ph-plus text-sm"></i>
+                Wiederkehrende Aufgabe hinzufügen
+            </button>
+
+            <div x-show="showForm" x-cloak x-transition>
+                {{-- Formular Neu --}}
+                <template x-if="!editId">
+                    <form method="POST" action="{{ route('recurring-tasks.store', $project) }}"
+                          class="space-y-3 pt-1">
+                        @csrf
+                        @include('projects._recurring_form', ['members' => $members])
+                        <div class="flex gap-2 pt-1">
+                            <button type="submit"
+                                    class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors">
+                                Speichern
+                            </button>
+                            <button type="button" @click="showForm = false"
+                                    class="text-sm text-gray-500 hover:text-gray-700 px-3 py-1.5 transition-colors">
+                                Abbrechen
+                            </button>
+                        </div>
+                    </form>
+                </template>
+
+                {{-- Formular Bearbeiten --}}
+                <template x-if="editId">
+                    <form method="POST" :action="'/recurring-tasks/' + editId"
+                          class="space-y-3 pt-1">
+                        @csrf
+                        @method('PUT')
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Vorlage bearbeiten</p>
+                            <label class="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+                                <input type="hidden" name="is_active" value="0">
+                                <input type="checkbox" name="is_active" value="1"
+                                       :checked="editData.is_active"
+                                       class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                Aktiv
+                            </label>
+                        </div>
+                        @include('projects._recurring_form', ['members' => $members, 'editing' => true])
+                        <div class="flex gap-2 pt-1">
+                            <button type="submit"
+                                    class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors">
+                                Aktualisieren
+                            </button>
+                            <button type="button" @click="showForm = false; editId = null; editData = {}"
+                                    class="text-sm text-gray-500 hover:text-gray-700 px-3 py-1.5 transition-colors">
+                                Abbrechen
+                            </button>
+                        </div>
+                    </form>
+                </template>
             </div>
         </div>
     </div>
@@ -323,6 +514,7 @@ function todoList(initialTodos) {
         newDesc:     '',
         newStatus:   'ready',
         newPriority: 'medium',
+        newCategory: '',
 
         async toggle(todo) {
             try {
@@ -350,10 +542,11 @@ function todoList(initialTodos) {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                     },
                     body: JSON.stringify({
-                        title:         this.newTitle,
-                        description:   this.newDesc,
-                        kanban_status: this.newStatus,
-                        priority:      this.newPriority,
+                        title:             this.newTitle,
+                        description:       this.newDesc,
+                        kanban_status:     this.newStatus,
+                        priority:          this.newPriority,
+                        work_category_id:  this.newCategory || null,
                     }),
                 });
                 const task = await res.json();
@@ -369,6 +562,7 @@ function todoList(initialTodos) {
                 this.newDesc     = '';
                 this.newStatus   = 'ready';
                 this.newPriority = 'medium';
+                this.newCategory = '';
                 this.showAdd     = false;
             } catch(e) { console.error(e); }
         },

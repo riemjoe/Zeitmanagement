@@ -95,12 +95,13 @@ $colConfig = [
                 $pDot     = match($task->priority) { 'high' => 'bg-red-500', 'medium' => 'bg-amber-400', default => 'bg-gray-400' };
                 $overdue  = $task->due_date && $task->due_date->isPast() && $task->kanban_status !== 'completed';
                 $taskData = [
-                    'title'       => $task->title,
-                    'description' => $task->description,
-                    'project_id'  => $task->project_id,
-                    'priority'    => $task->priority,
-                    'assigned_to' => $task->assigned_to,
-                    'due_date'    => $task->due_date ? $task->due_date->format('Y-m-d') : null,
+                    'title'            => $task->title,
+                    'description'      => $task->description,
+                    'project_id'       => $task->project_id,
+                    'priority'         => $task->priority,
+                    'assigned_to'      => $task->assigned_to,
+                    'due_date'         => $task->due_date ? $task->due_date->format('Y-m-d') : null,
+                    'work_category_id' => $task->work_category_id,
                 ];
             @endphp
             <div class="task-card bg-white rounded-xl border border-gray-200 border-l-4 {{ $pBorder }} p-3 shadow-sm hover:shadow-md transition-shadow"
@@ -248,6 +249,21 @@ $colConfig = [
                         </div>
                     </div>
 
+                    {{-- Arbeitskategorie (für Zeiterfassung) --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Arbeitskategorie
+                            <span class="font-normal text-gray-400">(optional · wird bei Zeiterfassung vorausgefüllt)</span>
+                        </label>
+                        <select name="work_category_id" x-model="f.work_category_id"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">– keine –</option>
+                            @foreach($categories as $cat)
+                            <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
                     {{-- Footer Buttons --}}
                     <div class="flex items-center justify-between pt-1">
                         <template x-if="editId">
@@ -285,7 +301,7 @@ function kanbanBoard() {
         open:      false,
         editId:    null,
         newStatus: 'ready',
-        f: { title: '', description: '', project_id: '', priority: 'medium', assigned_to: '', due_date: '' },
+        f: { title: '', description: '', project_id: '', priority: 'medium', assigned_to: '', due_date: '', work_category_id: '' },
 
         init() {
             const self = this;
@@ -316,7 +332,7 @@ function kanbanBoard() {
         openNew(status) {
             this.editId    = null;
             this.newStatus = status;
-            this.f = { title: '', description: '', project_id: '', priority: 'medium', assigned_to: '', due_date: '' };
+            this.f = { title: '', description: '', project_id: '', priority: 'medium', assigned_to: '', due_date: '', work_category_id: '' };
             this.open = true;
         },
 
@@ -325,12 +341,13 @@ function kanbanBoard() {
             this.editId    = id;
             this.newStatus = null;
             this.f = {
-                title:       data.title       ?? '',
-                description: data.description ?? '',
-                project_id:  String(data.project_id ?? ''),
-                priority:    data.priority    ?? 'medium',
-                assigned_to: data.assigned_to ? String(data.assigned_to) : '',
-                due_date:    data.due_date    ?? '',
+                title:            data.title            ?? '',
+                description:      data.description      ?? '',
+                project_id:       String(data.project_id ?? ''),
+                priority:         data.priority         ?? 'medium',
+                assigned_to:      data.assigned_to ? String(data.assigned_to) : '',
+                due_date:         data.due_date         ?? '',
+                work_category_id: data.work_category_id ? String(data.work_category_id) : '',
             };
             this.open = true;
         },
