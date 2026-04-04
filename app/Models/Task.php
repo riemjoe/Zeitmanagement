@@ -9,12 +9,13 @@ class Task extends Model
 {
     protected $fillable = [
         'project_id', 'assigned_to', 'work_category_id', 'title', 'description',
-        'priority', 'kanban_status', 'position', 'due_date',
+        'priority', 'kanban_status', 'position', 'due_date', 'budget_hours',
     ];
 
     protected $casts = [
-        'due_date' => 'date',
-        'position' => 'integer',
+        'due_date'     => 'date',
+        'position'     => 'integer',
+        'budget_hours' => 'decimal:2',
     ];
 
     public function project(): BelongsTo
@@ -30,6 +31,26 @@ class Task extends Model
     public function workCategory(): BelongsTo
     {
         return $this->belongsTo(\App\Models\WorkCategory::class);
+    }
+
+    public function timeEntries(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\TimeEntry::class);
+    }
+
+    /** Summe aller erfassten Stunden für diese Aufgabe. */
+    public function getTrackedHoursAttribute(): float
+    {
+        return (float) $this->timeEntries->sum('hours');
+    }
+
+    /** Prozentsatz des verbrauchten Zeitbudgets (0–100+). */
+    public function getBudgetHoursPercentAttribute(): int
+    {
+        if (! $this->budget_hours || (float) $this->budget_hours <= 0) {
+            return 0;
+        }
+        return (int) round($this->tracked_hours / (float) $this->budget_hours * 100);
     }
 
     /** Lesbare Status-Labels */

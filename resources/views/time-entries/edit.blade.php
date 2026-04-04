@@ -19,6 +19,24 @@
                 </select>
             </div>
 
+            @if($tasks->isNotEmpty())
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Aufgabe
+                    <span class="font-normal text-gray-400">(optional)</span>
+                </label>
+                <select name="task_id"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">– keine Aufgabe –</option>
+                    @foreach($tasks as $task)
+                    <option value="{{ $task->id }}" {{ old('task_id', $timeEntry->task_id) == $task->id ? 'selected' : '' }}>
+                        {{ $task->title }}
+                    </option>
+                    @endforeach
+                </select>
+            </div>
+            @endif
+
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Arbeitskategorie</label>
                 <select name="work_category_id" required

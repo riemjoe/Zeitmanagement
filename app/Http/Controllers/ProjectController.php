@@ -54,7 +54,7 @@ class ProjectController extends Controller
             'timeEntries.workCategory',
             'timeEntries.invoices',
             'expenses',
-            'todos',
+            'todos.timeEntries',
             'quote',
         ]);
         return view('projects.show', compact('project'));
@@ -105,15 +105,17 @@ class ProjectController extends Controller
     public function tasksJson(Project $project)
     {
         $tasks = $project->tasks()
-            ->with('workCategory')
+            ->with(['workCategory', 'timeEntries'])
             ->where('kanban_status', '!=', 'completed')
-            ->select('id', 'title', 'work_category_id', 'description')
+            ->select('id', 'title', 'work_category_id', 'description', 'budget_hours')
             ->get()
             ->map(fn ($t) => [
                 'id'               => $t->id,
                 'title'            => $t->title,
                 'work_category_id' => $t->work_category_id,
                 'description'      => $t->description,
+                'budget_hours'     => $t->budget_hours,
+                'tracked_hours'    => $t->tracked_hours,
             ]);
 
         return response()->json($tasks);

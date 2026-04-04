@@ -20,6 +20,7 @@ class ProjectTodoController extends Controller
             'kanban_status'    => 'nullable|in:ready,wip,testing,completed',
             'priority'         => 'nullable|in:low,medium,high',
             'work_category_id' => 'nullable|exists:work_categories,id',
+            'budget_hours'     => 'nullable|numeric|min:0.25|max:9999',
         ]);
 
         $maxPos = $project->tasks()->max('position') ?? -1;
@@ -31,6 +32,7 @@ class ProjectTodoController extends Controller
             'kanban_status'    => $data['kanban_status'] ?? 'ready',
             'priority'         => $data['priority'] ?? 'medium',
             'work_category_id' => $data['work_category_id'] ?? null,
+            'budget_hours'     => $data['budget_hours'] ?? null,
             'position'         => $maxPos + 1,
         ]);
 

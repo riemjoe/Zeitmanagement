@@ -118,12 +118,14 @@
 {{-- Aufgaben (Tasks / Kanban) --}}
 @php
     $initialTasks = $project->tasks->map(fn($t) => [
-        'id'            => $t->id,
-        'title'         => $t->title,
-        'description'   => $t->description,
-        'kanban_status' => $t->kanban_status,
-        'priority'      => $t->priority,
-        'completed'     => $t->kanban_status === 'completed',
+        'id'             => $t->id,
+        'title'          => $t->title,
+        'description'    => $t->description,
+        'kanban_status'  => $t->kanban_status,
+        'priority'       => $t->priority,
+        'completed'      => $t->kanban_status === 'completed',
+        'budget_hours'   => $t->budget_hours ? (float) $t->budget_hours : null,
+        'tracked_hours'  => $t->tracked_hours,
     ])->values()->toJson();
 @endphp
 
@@ -202,12 +204,33 @@
                     <i x-show="todo.completed" class="ph-bold ph-check text-xs"></i>
                 </button>
 
-                {{-- Titel + Beschreibung --}}
+                {{-- Titel + Beschreibung + Budget --}}
                 <div class="flex-1 min-w-0">
                     <p class="text-sm font-medium transition-colors"
                        :class="todo.completed ? 'line-through text-gray-400' : 'text-gray-800'"
                        x-text="todo.title"></p>
                     <p class="text-xs text-gray-400 mt-0.5" x-show="todo.description" x-text="todo.description"></p>
+
+                    {{-- Budget-Balken --}}
+                    <template x-if="todo.budget_hours">
+                        <div class="mt-1.5">
+                            <div class="flex justify-between text-xs mb-0.5"
+                                 :class="(todo.tracked_hours / todo.budget_hours) > 1 ? 'text-red-500' : 'text-gray-400'">
+                                <span x-text="(todo.tracked_hours ?? 0).toFixed(2).replace('.',',') + ' / ' + Number(todo.budget_hours).toFixed(2).replace('.',',') + ' h'"></span>
+                                <span x-text="Math.round((todo.tracked_hours ?? 0) / todo.budget_hours * 100) + '%'"></span>
+                            </div>
+                            <div class="w-full bg-gray-100 rounded-full h-1.5">
+                                <div class="h-1.5 rounded-full transition-all"
+                                     :class="{
+                                         'bg-red-500':    (todo.tracked_hours / todo.budget_hours) > 1,
+                                         'bg-amber-500':  (todo.tracked_hours / todo.budget_hours) > 0.8 && (todo.tracked_hours / todo.budget_hours) <= 1,
+                                         'bg-indigo-400': (todo.tracked_hours / todo.budget_hours) <= 0.8,
+                                     }"
+                                     :style="'width: ' + Math.min(100, Math.round((todo.tracked_hours ?? 0) / todo.budget_hours * 100)) + '%'">
+                                </div>
+                            </div>
+                        </div>
+                    </template>
                 </div>
 
                 {{-- Kanban-Status-Badge --}}

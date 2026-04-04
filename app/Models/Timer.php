@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Timer extends Model
 {
     protected $fillable = [
-        'project_id', 'work_category_id', 'started_at', 'description',
+        'user_id', 'project_id', 'work_category_id', 'started_at', 'description',
         'paused_at', 'paused_seconds',
     ];
 

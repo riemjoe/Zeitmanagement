@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class TimeEntry extends Model
 {
     protected $fillable = [
-        'project_id', 'work_category_id',
+        'project_id', 'work_category_id', 'task_id',
         'date', 'hours', 'description', 'ticket_id', 'billed',
     ];
 
@@ -27,6 +27,11 @@ class TimeEntry extends Model
     public function workCategory(): BelongsTo
     {
         return $this->belongsTo(WorkCategory::class);
+    }
+
+    public function task(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Task::class);
     }
 
     public function invoices(): BelongsToMany

@@ -102,6 +102,8 @@ $colConfig = [
                     'assigned_to'      => $task->assigned_to,
                     'due_date'         => $task->due_date ? $task->due_date->format('Y-m-d') : null,
                     'work_category_id' => $task->work_category_id,
+                    'budget_hours'     => $task->budget_hours,
+                    'tracked_hours'    => $task->tracked_hours,
                 ];
             @endphp
             <div class="task-card bg-white rounded-xl border border-gray-200 border-l-4 {{ $pBorder }} p-3 shadow-sm hover:shadow-md transition-shadow"
@@ -144,6 +146,28 @@ $colConfig = [
                     </span>
                     @endif
                 </div>
+
+                @if($task->budget_hours)
+                @php
+                    $tPct  = $task->budget_hours_percent;
+                    $tOver = $tPct > 100;
+                @endphp
+                <div class="mt-2">
+                    <div class="flex justify-between text-xs mb-0.5
+                                {{ $tOver ? 'text-red-500' : 'text-gray-400' }}">
+                        <span class="flex items-center gap-1">
+                            <i class="ph-bold ph-clock text-xs"></i>
+                            {{ number_format($task->tracked_hours, 1, ',', '.') }} / {{ number_format($task->budget_hours, 1, ',', '.') }} h
+                        </span>
+                        <span>{{ $tPct }}%</span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-1">
+                        <div class="h-1 rounded-full transition-all
+                                    {{ $tOver ? 'bg-red-500' : ($tPct > 80 ? 'bg-amber-500' : 'bg-indigo-400') }}"
+                             style="width: {{ min(100, $tPct) }}%"></div>
+                    </div>
+                </div>
+                @endif
             </div>
             @endforeach
 
@@ -249,19 +273,30 @@ $colConfig = [
                         </div>
                     </div>
 
-                    {{-- Arbeitskategorie (für Zeiterfassung) --}}
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                            Arbeitskategorie
-                            <span class="font-normal text-gray-400">(optional · wird bei Zeiterfassung vorausgefüllt)</span>
-                        </label>
-                        <select name="work_category_id" x-model="f.work_category_id"
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <option value="">– keine –</option>
-                            @foreach($categories as $cat)
-                            <option value="{{ $cat->id }}">{{ $cat->name }}</option>
-                            @endforeach
-                        </select>
+                    {{-- Arbeitskategorie + Zeitbudget --}}
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Arbeitskategorie
+                                <span class="font-normal text-gray-400">(optional)</span>
+                            </label>
+                            <select name="work_category_id" x-model="f.work_category_id"
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="">– keine –</option>
+                                @foreach($categories as $cat)
+                                <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Zeitbudget (h)
+                                <span class="font-normal text-gray-400">(optional)</span>
+                            </label>
+                            <input type="number" name="budget_hours" x-model="f.budget_hours"
+                                   min="0.25" step="0.25" placeholder="z.B. 8"
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
                     </div>
 
                     {{-- Footer Buttons --}}
@@ -301,7 +336,7 @@ function kanbanBoard() {
         open:      false,
         editId:    null,
         newStatus: 'ready',
-        f: { title: '', description: '', project_id: '', priority: 'medium', assigned_to: '', due_date: '', work_category_id: '' },
+        f: { title: '', description: '', project_id: '', priority: 'medium', assigned_to: '', due_date: '', work_category_id: '', budget_hours: '' },
 
         init() {
             const self = this;
@@ -332,7 +367,7 @@ function kanbanBoard() {
         openNew(status) {
             this.editId    = null;
             this.newStatus = status;
-            this.f = { title: '', description: '', project_id: '', priority: 'medium', assigned_to: '', due_date: '', work_category_id: '' };
+            this.f = { title: '', description: '', project_id: '', priority: 'medium', assigned_to: '', due_date: '', work_category_id: '', budget_hours: '' };
             this.open = true;
         },
 
@@ -348,6 +383,8 @@ function kanbanBoard() {
                 assigned_to:      data.assigned_to ? String(data.assigned_to) : '',
                 due_date:         data.due_date         ?? '',
                 work_category_id: data.work_category_id ? String(data.work_category_id) : '',
+                budget_hours:     data.budget_hours     ?? '',
+                tracked_hours:    data.tracked_hours    ?? 0,
             };
             this.open = true;
         },

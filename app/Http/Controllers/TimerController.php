@@ -124,7 +124,8 @@ class TimerController extends Controller
             return response()->json(['error' => 'Kein aktiver Timer'], 404);
         }
 
-        $hours = max(round($timer->elapsed_seconds / 3600, 2), 0.01);
+        $rawHours = $timer->elapsed_seconds / 3600;
+        $hours    = max(round($rawHours / 0.25) * 0.25, 0.25);
         $description = $request->input('description', $timer->description);
 
         $entry = TimeEntry::create([

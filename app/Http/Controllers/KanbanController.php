@@ -79,6 +79,7 @@ class KanbanController extends Controller
             'assigned_to'      => 'nullable|exists:users,id',
             'due_date'         => 'nullable|date',
             'work_category_id' => 'nullable|exists:work_categories,id',
+            'budget_hours'     => 'nullable|numeric|min:0.25|max:9999',
         ]);
 
         // Position ans Ende der Zielspalte setzen
@@ -101,6 +102,7 @@ class KanbanController extends Controller
             'assigned_to'      => 'nullable|exists:users,id',
             'due_date'         => 'nullable|date',
             'work_category_id' => 'nullable|exists:work_categories,id',
+            'budget_hours'     => 'nullable|numeric|min:0.25|max:9999',
         ]);
 
         $task->update($data);

@@ -48,6 +48,7 @@ class TimeEntryController extends Controller
         $data = $request->validate([
             'project_id'       => 'required|exists:projects,id',
             'work_category_id' => 'required|exists:work_categories,id',
+            'task_id'          => 'nullable|exists:tasks,id',
             'date'             => 'required|date',
             'hours'            => 'required|numeric|min:0.01|max:24',
             'description'      => 'nullable|string',
@@ -66,7 +67,9 @@ class TimeEntryController extends Controller
     {
         $projects   = Project::with('customer')->orderBy('name')->get();
         $categories = WorkCategory::orderBy('name')->get();
-        return view('time-entries.edit', compact('timeEntry', 'projects', 'categories'));
+        $tasks      = \App\Models\Task::where('project_id', $timeEntry->project_id)
+                        ->orderBy('title')->get();
+        return view('time-entries.edit', compact('timeEntry', 'projects', 'categories', 'tasks'));
     }
 
     public function update(Request $request, TimeEntry $timeEntry)
@@ -74,6 +77,7 @@ class TimeEntryController extends Controller
         $data = $request->validate([
             'project_id'       => 'required|exists:projects,id',
             'work_category_id' => 'required|exists:work_categories,id',
+            'task_id'          => 'nullable|exists:tasks,id',
             'date'             => 'required|date',
             'hours'            => 'required|numeric|min:0.01|max:24',
             'description'      => 'nullable|string',
