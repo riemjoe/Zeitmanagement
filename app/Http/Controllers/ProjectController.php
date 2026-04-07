@@ -56,6 +56,7 @@ class ProjectController extends Controller
             'expenses',
             'todos.timeEntries',
             'quote',
+            'files',
         ]);
         return view('projects.show', compact('project'));
     }

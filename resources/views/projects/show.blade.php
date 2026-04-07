@@ -527,6 +527,62 @@
     </div>
 </div>
 
+{{-- ── Dateien ─────────────────────────────────────────────────────────── --}}
+<div class="bg-white rounded-xl border border-gray-200 mt-6">
+    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+        <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+            <i class="ph-bold ph-paperclip text-gray-400"></i> Dateien
+        </h3>
+        <span class="text-sm text-gray-400">{{ $project->files->count() }} {{ $project->files->count() === 1 ? 'Datei' : 'Dateien' }}</span>
+    </div>
+
+    {{-- Upload-Form --}}
+    <div class="px-5 py-3 border-b border-gray-50">
+        <form method="POST" action="{{ route('project-files.store', $project) }}" enctype="multipart/form-data"
+              class="flex items-center gap-3">
+            @csrf
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-600">
+                <span class="bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center gap-1.5">
+                    <i class="ph-bold ph-upload-simple text-sm"></i> Datei wählen
+                </span>
+                <input type="file" name="file" required class="sr-only" onchange="this.nextElementSibling.textContent = this.files[0]?.name ?? 'Keine Datei'">
+                <span class="text-gray-400 text-xs">Keine Datei</span>
+            </label>
+            <button type="submit"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">
+                Hochladen
+            </button>
+        </form>
+    </div>
+
+    {{-- Datei-Liste --}}
+    <div class="divide-y divide-gray-50">
+        @forelse($project->files as $file)
+        <div class="px-5 py-3 flex items-center gap-3">
+            <i class="ph-bold {{ $file->icon_class }} text-lg shrink-0"></i>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-800 truncate">{{ $file->original_name }}</p>
+                <p class="text-xs text-gray-400">{{ $file->readable_size }} · {{ $file->created_at->format('d.m.Y H:i') }}</p>
+            </div>
+            <div class="shrink-0 flex gap-2">
+                <a href="{{ route('project-files.download', $file) }}"
+                   class="text-gray-400 hover:text-indigo-600 text-xs flex items-center gap-1">
+                    <i class="ph-bold ph-download-simple text-sm"></i> Download
+                </a>
+                <form method="POST" action="{{ route('project-files.destroy', $file) }}" onsubmit="return confirm('Datei löschen?')">
+                    @csrf @method('DELETE')
+                    <button class="text-gray-400 hover:text-red-500 text-xs flex items-center gap-1">
+                        <i class="ph-bold ph-trash text-sm"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+        @empty
+        <p class="px-5 py-6 text-center text-sm text-gray-400">Noch keine Dateien hochgeladen.</p>
+        @endforelse
+    </div>
+</div>
+
 @push('scripts')
 <script>
 function todoList(initialTodos) {

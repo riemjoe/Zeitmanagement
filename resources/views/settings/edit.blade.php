@@ -61,6 +61,12 @@
             class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all">
             <i class="ph-bold ph-list-checks"></i> E-Mail-Protokoll
         </button>
+
+        <button @click="tab = 'kundennachricht'" type="button"
+            :class="tab === 'kundennachricht' ? 'bg-white shadow text-indigo-600 dark:bg-gray-700' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400'"
+            class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all">
+            <i class="ph-bold ph-chat-text"></i> Kundennachricht
+        </button>
         @endif
 
         <button @click="tab = 'passwort'" type="button"
@@ -606,6 +612,46 @@
             </div>
         </form>
     </div>
+
+    {{-- ════════════════════════════════════════════════════════════════════ --}}
+    {{-- TAB: KUNDENNACHRICHT-TEMPLATE                                        --}}
+    {{-- ════════════════════════════════════════════════════════════════════ --}}
+    @if(auth()->user()->isAdmin())
+    <div x-show="tab === 'kundennachricht'" x-cloak>
+        <form method="POST" action="{{ route('settings.customer-message') }}">
+            @csrf @method('PUT')
+            <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+                <h3 class="font-semibold text-gray-700 border-b pb-2">Kundennachricht-Template</h3>
+                <p class="text-xs text-gray-500">
+                    Dieses HTML-Template wird beim Klick auf „Nachricht schreiben" in der Kundenübersicht verwendet.
+                    Verwende <code class="bg-gray-100 rounded px-1">&#123;&#123;client_message&#125;&#125;</code> als Platzhalter für den eingegebenen Text.
+                </p>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">E-Mail-Betreff</label>
+                    <input type="text" name="customer_message_subject"
+                           value="{{ old('customer_message_subject', $settings['customer_message_subject'] ?? 'Nachricht von uns') }}"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">HTML-Template</label>
+                    <textarea name="customer_message_template" rows="16"
+                              placeholder="<html><body><p>Sehr geehrte Damen und Herren,</p><p>&#123;&#123;client_message&#125;&#125;</p><p>Mit freundlichen Grüßen</p></body></html>"
+                              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">{{ old('customer_message_template', $settings['customer_message_template'] ?? '') }}</textarea>
+                    <p class="text-xs text-gray-400 mt-1">Tipp: Du kannst hier vollständiges HTML inkl. Styling verwenden. Der Platzhalter <code>&#123;&#123;client_message&#125;&#125;</code> wird beim Senden durch den eingegebenen Text ersetzt.</p>
+                </div>
+
+                <div>
+                    <button type="submit"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-5 py-2 rounded-lg text-sm">
+                        Template speichern
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    @endif
 
 </div>
 @endsection

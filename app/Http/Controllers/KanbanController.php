@@ -26,6 +26,12 @@ class KanbanController extends Controller
             $query->where('project_id', $projectFilter);
         }
 
+        // Abgeschlossene Aufgaben, die länger als eine Stunde in diesem Status sind, ausblenden
+        $query->where(function ($q) {
+            $q->where('kanban_status', '!=', 'completed')
+              ->orWhere('updated_at', '>=', now()->subHour());
+        });
+
         $tasks = $query->get()->groupBy('kanban_status');
 
         $columns = [];

@@ -15,6 +15,17 @@
                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
             </div>
 
+            <div class="mb-1 text-xs text-gray-400 font-mono bg-gray-50 rounded px-2 py-1 inline-block">
+                Kundennr.: {{ $customer->customer_number ?? '–' }}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Ansprechpartner:in</label>
+                <input type="text" name="contact_person" value="{{ old('contact_person', $customer->contact_person) }}"
+                       placeholder="z.B. Max Mustermann"
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">E-Mail</label>

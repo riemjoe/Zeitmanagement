@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\Expense;
 use App\Models\Invoice;
 use App\Models\Project;
+use App\Models\Ticket;
 use App\Models\TimeEntry;
 
 class DashboardController extends Controller
@@ -28,6 +29,13 @@ class DashboardController extends Controller
         $recentEntries = TimeEntry::with(['project.customer', 'workCategory'])
             ->orderByDesc('date')
             ->limit(10)
+            ->get();
+
+        // Offene Tickets
+        $openTickets = Ticket::with(['customer', 'supportCategory'])
+            ->whereNotIn('status', ['closed'])
+            ->orderByDesc('created_at')
+            ->limit(15)
             ->get();
 
         // ── Monatliche Chart-Daten (letzte 12 Monate) ─────────────────────
@@ -69,6 +77,6 @@ class DashboardController extends Controller
             'expenses' => $chartExpenses,
         ];
 
-        return view('dashboard.index', compact('stats', 'recentEntries', 'chartData'));
+        return view('dashboard.index', compact('stats', 'recentEntries', 'chartData', 'openTickets'));
     }
 }

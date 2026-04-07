@@ -126,6 +126,23 @@ class SettingController extends Controller
     }
 
     /**
+     * Kundennachricht-Template speichern.
+     */
+    public function updateCustomerMessageTemplate(Request $request)
+    {
+        $data = $request->validate([
+            'customer_message_subject'  => 'nullable|string|max:255',
+            'customer_message_template' => 'nullable|string',
+        ]);
+
+        Setting::set('customer_message_subject',  $data['customer_message_subject']  ?? 'Nachricht von uns');
+        Setting::set('customer_message_template', $data['customer_message_template'] ?? '');
+
+        return redirect()->route('settings.edit')
+            ->with('success', 'Kundennachricht-Template wurde gespeichert.');
+    }
+
+    /**
      * Sendet sofort eine Test-Wartungserinnerung an den eingeloggten Admin.
      */
     public function testMail(Request $request)

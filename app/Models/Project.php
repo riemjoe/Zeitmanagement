@@ -61,6 +61,12 @@ class Project extends Model
         return $this->hasMany(\App\Models\MaintenanceEvent::class)->orderBy('scheduled_date');
     }
 
+    /** Hochgeladene Dateien des Projekts. */
+    public function files(): HasMany
+    {
+        return $this->hasMany(\App\Models\ProjectFile::class)->orderByDesc('created_at');
+    }
+
     public function quote(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Quote::class);

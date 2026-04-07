@@ -53,10 +53,14 @@ Route::middleware('auth.simple')->prefix('admin')->group(function () {
 
     // Kunden
     Route::resource('customers', CustomerController::class);
+    Route::post('/customers/{customer}/send-message', [CustomerController::class, 'sendMessage'])->name('customers.send-message');
 
     // Projekte
     Route::resource('projects', ProjectController::class);
     Route::get('/projects/{project}/tasks-json', [ProjectController::class, 'tasksJson'])->name('projects.tasks-json');
+    Route::post('/projects/{project}/files', [\App\Http\Controllers\ProjectFileController::class, 'store'])->name('project-files.store');
+    Route::delete('/project-files/{file}', [\App\Http\Controllers\ProjectFileController::class, 'destroy'])->name('project-files.destroy');
+    Route::get('/project-files/{file}/download', [\App\Http\Controllers\ProjectFileController::class, 'download'])->name('project-files.download');
 
     // Arbeitskategorien
     Route::resource('work-categories', WorkCategoryController::class)
@@ -149,6 +153,7 @@ Route::middleware('auth.simple')->prefix('admin')->group(function () {
     Route::middleware('ensure.admin')->group(function () {
         Route::post('/settings/test-mail', [SettingController::class, 'testMail'])->name('settings.test-mail');
         Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+        Route::put('/settings/customer-message', [SettingController::class, 'updateCustomerMessageTemplate'])->name('settings.customer-message');
 
         // Team-Verwaltung
         Route::resource('team', TeamController::class)

@@ -8,10 +8,24 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Customer extends Model
 {
     protected $fillable = [
-        'name', 'email', 'phone',
+        'customer_number', 'name', 'email', 'contact_person', 'phone',
         'street', 'zip', 'city', 'country',
         'notes',
     ];
+
+    /**
+     * Eindeutige 8-stellige Kundennummer im Format xxxx-xxxx generieren.
+     */
+    public static function generateNumber(): string
+    {
+        do {
+            $part1 = strtoupper(substr(str_shuffle('ABCDEFGHJKLMNPQRSTUVWXYZ23456789'), 0, 4));
+            $part2 = strtoupper(substr(str_shuffle('ABCDEFGHJKLMNPQRSTUVWXYZ23456789'), 0, 4));
+            $number = $part1 . '-' . $part2;
+        } while (static::where('customer_number', $number)->exists());
+
+        return $number;
+    }
 
     public function projects(): HasMany
     {
