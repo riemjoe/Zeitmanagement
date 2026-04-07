@@ -118,6 +118,22 @@
                     @csrf
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Betreff <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="subject" required
+                            placeholder="Betreff…"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Ticketnummer
+                        </label>
+                        <input type="text" name="ticket_number"
+                            placeholder="Ticketnummer…"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
                             Nachricht <span class="text-red-500">*</span>
                             <span class="font-normal text-gray-400">(wird in das Template als <code class="bg-gray-100 px-1 rounded text-xs">@{{client_message}}</code> eingefügt)</span>
                         </label>
