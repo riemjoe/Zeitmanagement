@@ -7,6 +7,7 @@ use App\Mail\TicketCreatedAdmin;
 use App\Mail\TicketCreatedCustomer;
 use App\Mail\TicketRepliedCustomer;
 use App\Models\Customer;
+use App\Models\EmailLog;
 use App\Models\Project;
 use App\Models\SupportCategory;
 use App\Models\Task;
@@ -14,6 +15,7 @@ use App\Models\Ticket;
 use App\Models\TicketMessage;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class HelpdeskController extends Controller
@@ -232,32 +234,56 @@ class HelpdeskController extends Controller
 
     private function sendCustomerCreatedMail(Ticket $ticket): void
     {
+        $subject = 'Ihr Support-Ticket wurde erstellt – ' . $ticket->ticket_number;
         try {
             Mail::to($ticket->customer_email)->send(new TicketCreatedCustomer($ticket));
-        } catch (\Exception $e) {}
+            EmailLog::record('ticket_created_customer', $ticket->customer_email, $subject, 'sent', null, $ticket->id);
+        } catch (\Exception $e) {
+            Log::error('sendCustomerCreatedMail: ' . $e->getMessage());
+            EmailLog::record('ticket_created_customer', $ticket->customer_email, $subject, 'failed', $e->getMessage(), $ticket->id);
+        }
     }
 
     private function sendCustomerReplyMail(Ticket $ticket, TicketMessage $message): void
     {
+        $subject = 'Antwort auf Ihr Ticket ' . $ticket->ticket_number;
         try {
             Mail::to($ticket->customer_email)->send(new TicketRepliedCustomer($ticket, $message));
-        } catch (\Exception $e) {}
+            EmailLog::record('ticket_replied_customer', $ticket->customer_email, $subject, 'sent', null, $ticket->id);
+        } catch (\Exception $e) {
+            Log::error('sendCustomerReplyMail: ' . $e->getMessage());
+            EmailLog::record('ticket_replied_customer', $ticket->customer_email, $subject, 'failed', $e->getMessage(), $ticket->id);
+        }
     }
 
     private function sendCustomerClosedMail(Ticket $ticket): void
     {
+        $subject = 'Ihr Ticket ' . $ticket->ticket_number . ' wurde geschlossen';
         try {
             Mail::to($ticket->customer_email)->send(new TicketClosed($ticket));
-        } catch (\Exception $e) {}
+            EmailLog::record('ticket_closed', $ticket->customer_email, $subject, 'sent', null, $ticket->id);
+        } catch (\Exception $e) {
+            Log::error('sendCustomerClosedMail: ' . $e->getMessage());
+            EmailLog::record('ticket_closed', $ticket->customer_email, $subject, 'failed', $e->getMessage(), $ticket->id);
+        }
     }
 
     private function notifyAdminsTicketCreated(Ticket $ticket): void
     {
+        $subject = 'Neues Support-Ticket: ' . $ticket->ticket_number;
         try {
             $admins = User::where('role', 'admin')->where('is_active', true)->whereNotNull('email')->get();
             foreach ($admins as $admin) {
-                Mail::to($admin->email)->send(new TicketCreatedAdmin($ticket));
+                try {
+                    Mail::to($admin->email)->send(new TicketCreatedAdmin($ticket));
+                    EmailLog::record('ticket_created_admin', $admin->email, $subject, 'sent', null, $ticket->id);
+                } catch (\Exception $e) {
+                    Log::error('notifyAdminsTicketCreated: ' . $e->getMessage());
+                    EmailLog::record('ticket_created_admin', $admin->email, $subject, 'failed', $e->getMessage(), $ticket->id);
+                }
             }
-        } catch (\Exception $e) {}
+        } catch (\Exception $e) {
+            Log::error('notifyAdminsTicketCreated (outer): ' . $e->getMessage());
+        }
     }
 }

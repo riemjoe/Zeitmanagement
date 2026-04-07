@@ -29,8 +29,24 @@ Route::get('/login',  [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// ── Alle geschützten Routen ──────────────────────────────────────────────────
-Route::middleware('auth.simple')->group(function () {
+// ── Öffentliche Helpdesk-Startseite ─────────────────────────────────────────
+Route::get('/', [TicketController::class, 'home'])->name('helpdesk.home');
+
+// ── Öffentliche Helpdesk-Routen (kein Login erforderlich) ───────────────────
+// Schreib-Routen: max. 10 Anfragen pro 5 Minuten pro IP
+Route::middleware('throttle:10,5')->group(function () {
+    Route::post('/support',                         [TicketController::class, 'store'])->name('helpdesk.store');
+    Route::post('/support/track',                   [TicketController::class, 'track'])->name('helpdesk.track.post');
+    Route::post('/support/ticket/{ticket}/reply',   [TicketController::class, 'reply'])->name('helpdesk.ticket.reply');
+});
+// Lese-Routen: offen
+Route::get('/support',                              [TicketController::class, 'create'])->name('helpdesk.create');
+Route::get('/support/submitted/{ticket}',           [TicketController::class, 'submitted'])->name('helpdesk.submitted');
+Route::get('/support/track',                        [TicketController::class, 'trackForm'])->name('helpdesk.track');
+Route::get('/support/ticket/{ticket}',              [TicketController::class, 'conversation'])->name('helpdesk.conversation');
+
+// ── Alle geschützten Routen (Verwaltung unter /admin/) ───────────────────────
+Route::middleware('auth.simple')->prefix('admin')->group(function () {
 
     // Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
@@ -40,7 +56,6 @@ Route::middleware('auth.simple')->group(function () {
 
     // Projekte
     Route::resource('projects', ProjectController::class);
-    // Tasks eines Projekts als JSON (für Zeiterfassungs-Selektor)
     Route::get('/projects/{project}/tasks-json', [ProjectController::class, 'tasksJson'])->name('projects.tasks-json');
 
     // Arbeitskategorien
@@ -118,25 +133,6 @@ Route::middleware('auth.simple')->group(function () {
     Route::put('/settings/profile',  [SettingController::class, 'updateProfile'])->name('settings.profile');
     Route::post('/settings/password',[SettingController::class, 'updatePassword'])->name('settings.password');
 
-    // Einstellungen – Unternehmenseinstellungen nur für Admins
-    Route::middleware('ensure.admin')->group(function () {
-        Route::post('/settings/test-mail', [SettingController::class, 'testMail'])->name('settings.test-mail');
-        Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
-
-        // Team-Verwaltung
-        Route::resource('team', TeamController::class)
-            ->parameters(['team' => 'team'])
-            ->only(['index', 'create', 'store', 'edit', 'update']);
-    });
-
-    // Export / Import – nur für Admins
-    Route::middleware('ensure.admin')->group(function () {
-        Route::get('/export',          [ExportImportController::class, 'showExport'])->name('export-import.export');
-        Route::get('/export/download', [ExportImportController::class, 'export'])->name('export-import.download');
-        Route::get('/import',          [ExportImportController::class, 'showImport'])->name('export-import.import');
-        Route::post('/import',         [ExportImportController::class, 'import'])->name('export-import.import.post');
-    });
-
     // Helpdesk (Admin)
     Route::get('/helpdesk',                             [HelpdeskController::class, 'index'])->name('helpdesk.index');
     Route::post('/helpdesk',                            [HelpdeskController::class, 'adminStore'])->name('helpdesk.admin-store');
@@ -146,24 +142,28 @@ Route::middleware('auth.simple')->group(function () {
     Route::post('/helpdesk/{ticket}/create-task',       [HelpdeskController::class, 'createTask'])->name('helpdesk.create-task');
     Route::delete('/helpdesk/{ticket}',                 [HelpdeskController::class, 'destroy'])->name('helpdesk.destroy');
 
-    // Support-Kategorien (Admin)
-    Route::resource('support-categories', SupportCategoryController::class)
-        ->only(['index', 'store', 'update', 'destroy']);
-
     // Kunden SLA-Zeiten
     Route::put('/customers/{customer}/sla',             [CustomerController::class, 'updateSla'])->name('customers.sla.update');
 
-});
+    // Admin-only Routen
+    Route::middleware('ensure.admin')->group(function () {
+        Route::post('/settings/test-mail', [SettingController::class, 'testMail'])->name('settings.test-mail');
+        Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
 
-// ── Öffentliche Helpdesk-Routen (kein Login erforderlich) ───────────────────
-// Schreib-Routen: max. 10 Anfragen pro 5 Minuten pro IP
-Route::middleware('throttle:10,5')->group(function () {
-    Route::post('/support',                         [TicketController::class, 'store'])->name('helpdesk.store');
-    Route::post('/support/track',                   [TicketController::class, 'track'])->name('helpdesk.track.post');
-    Route::post('/support/ticket/{ticket}/reply',   [TicketController::class, 'reply'])->name('helpdesk.ticket.reply');
+        // Team-Verwaltung
+        Route::resource('team', TeamController::class)
+            ->parameters(['team' => 'team'])
+            ->only(['index', 'create', 'store', 'edit', 'update']);
+
+        // Support-Kategorien
+        Route::resource('support-categories', SupportCategoryController::class)
+            ->only(['index', 'store', 'update', 'destroy']);
+
+        // Export / Import
+        Route::get('/export',          [ExportImportController::class, 'showExport'])->name('export-import.export');
+        Route::get('/export/download', [ExportImportController::class, 'export'])->name('export-import.download');
+        Route::get('/import',          [ExportImportController::class, 'showImport'])->name('export-import.import');
+        Route::post('/import',         [ExportImportController::class, 'import'])->name('export-import.import.post');
+    });
+
 });
-// Lese-Routen: offen
-Route::get('/support',                              [TicketController::class, 'create'])->name('helpdesk.create');
-Route::get('/support/submitted/{ticket}',           [TicketController::class, 'submitted'])->name('helpdesk.submitted');
-Route::get('/support/track',                        [TicketController::class, 'trackForm'])->name('helpdesk.track');
-Route::get('/support/ticket/{ticket}',              [TicketController::class, 'conversation'])->name('helpdesk.conversation');

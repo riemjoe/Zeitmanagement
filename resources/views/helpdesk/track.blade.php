@@ -1,19 +1,52 @@
+@php
+    $accent     = $settings['helpdesk_accent'] ?? '#2563eb';
+    $hdName     = $settings['helpdesk_name'] ?? $settings['company_name'] ?? 'Support';
+    $privacyUrl = $settings['privacy_url'] ?? '';
+    $imprintUrl = $settings['imprint_url'] ?? '';
+@endphp
 <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ticket nachverfolgen – Support</title>
+    <title>Ticket nachverfolgen – {{ $hdName }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css"/>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <style>
+        :root { --accent: {{ $accent }}; }
+        .text-accent  { color: var(--accent); }
+        .icon-accent  { color: var(--accent); }
+        .btn-accent   { background-color: var(--accent); color: #fff; }
+        .btn-accent:hover { filter: brightness(0.9); }
+        input:focus, select:focus {
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+            border-color: var(--accent) !important;
+            outline: none;
+        }
+    </style>
 </head>
-<body class="bg-gray-50 min-h-screen flex items-center justify-center py-10 px-4">
+<body class="bg-gray-50 min-h-screen flex flex-col">
 
+{{-- Header --}}
+<header class="bg-white border-b border-gray-200">
+    <div class="max-w-md mx-auto px-6 py-4 flex items-center gap-3">
+        <a href="{{ route('helpdesk.home') }}" class="text-gray-400 hover:text-gray-600 transition-colors">
+            <i class="ph-bold ph-arrow-left"></i>
+        </a>
+        @if(!empty($settings['helpdesk_logo_url']))
+            <img src="{{ $settings['helpdesk_logo_url'] }}" alt="Logo" class="h-7 w-auto object-contain">
+        @endif
+        <span class="text-sm font-semibold text-gray-700">{{ $hdName }}</span>
+    </div>
+</header>
+
+<main class="flex-1 flex items-center justify-center py-10 px-4">
 <div class="w-full max-w-md">
     <div class="text-center mb-8">
-        <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-blue-100 mb-4">
-            <i class="ph-bold ph-magnifying-glass text-blue-600 text-2xl"></i>
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-full mb-4"
+             style="background-color: color-mix(in srgb, {{ $accent }} 15%, white);">
+            <i class="ph-bold ph-magnifying-glass text-2xl icon-accent"></i>
         </div>
         <h1 class="text-2xl font-bold text-gray-900">Ticket nachverfolgen</h1>
         <p class="text-gray-500 mt-1 text-sm">Geben Sie Ihre E-Mail-Adresse und die Ticket-ID ein, um den Verlauf einzusehen.</p>
@@ -42,19 +75,18 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Ihre E-Mail-Adresse</label>
                 <input type="email" name="customer_email" value="{{ old('customer_email') }}"
-                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                     placeholder="ihre@email.de" required>
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Ticket-ID</label>
                 <input type="text" name="ticket_number" value="{{ old('ticket_number') }}"
-                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono uppercase"
                     placeholder="XXX-XXX-XXX" required maxlength="11">
             </div>
 
-            <button type="submit"
-                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors">
+            <button type="submit" class="w-full btn-accent font-semibold py-2.5 rounded-lg text-sm transition-all">
                 <i class="ph-bold ph-arrow-right mr-1"></i> Ticket anzeigen
             </button>
         </form>
@@ -62,9 +94,25 @@
 
     <p class="text-center text-sm text-gray-500 mt-5">
         Noch kein Ticket?
-        <a href="{{ route('helpdesk.create') }}" class="text-blue-600 hover:underline font-medium">Ticket einreichen</a>
+        <a href="{{ route('helpdesk.create') }}" class="text-accent hover:underline font-medium">Ticket einreichen</a>
     </p>
 </div>
+</main>
+
+{{-- Footer --}}
+<footer class="border-t border-gray-200 bg-white py-4 px-6">
+    <div class="max-w-md mx-auto flex flex-wrap items-center justify-between gap-3">
+        <p class="text-xs text-gray-400">&copy; {{ date('Y') }} {{ $settings['company_name'] ?? $hdName }}</p>
+        <div class="flex gap-4">
+            @if($privacyUrl)
+                <a href="{{ $privacyUrl }}" target="_blank" class="text-xs text-gray-400 hover:text-gray-600">Datenschutzerklärung</a>
+            @endif
+            @if($imprintUrl)
+                <a href="{{ $imprintUrl }}" target="_blank" class="text-xs text-gray-400 hover:text-gray-600">Impressum</a>
+            @endif
+        </div>
+    </div>
+</footer>
 
 </body>
 </html>

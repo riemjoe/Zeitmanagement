@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mail\MaintenanceReminder;
+use App\Models\EmailLog;
 use App\Models\MaintenanceEvent;
 use App\Models\Project;
 use App\Models\Setting;
@@ -18,8 +19,13 @@ class SettingController extends Controller
     /** Einstellungsseite anzeigen (alle Nutzer). */
     public function edit()
     {
-        $settings = Setting::getAll();
-        return view('settings.edit', compact('settings'));
+        $settings  = Setting::getAll();
+        $emailLogs = EmailLog::with('ticket')
+            ->latest()
+            ->limit(200)
+            ->get();
+
+        return view('settings.edit', compact('settings', 'emailLogs'));
     }
 
     /**
@@ -46,19 +52,26 @@ class SettingController extends Controller
             'dark_mode'           => 'required|in:off,on,auto',
             'dark_mode_from'      => 'nullable|string|max:10',
             'dark_mode_to'        => 'nullable|string|max:10',
+            // Helpdesk-Branding
+            'helpdesk_name'       => 'nullable|string|max:255',
+            'helpdesk_subtitle'   => 'nullable|string|max:500',
+            'helpdesk_logo_url'   => 'nullable|url|max:500',
+            'helpdesk_accent'     => 'nullable|string|max:20',
+            'privacy_url'         => 'nullable|url|max:500',
+            'imprint_url'         => 'nullable|url|max:500',
         ]);
 
         $data['kleinunternehmer'] = $request->boolean('kleinunternehmer') ? '1' : '0';
-        $data['dark_mode']      = $data['dark_mode'] ?? 'off';
-        $data['dark_mode_from'] = $data['dark_mode_from'] ?? '21:00';
-        $data['dark_mode_to']   = $data['dark_mode_to']   ?? '06:00';
+        $data['dark_mode']        = $data['dark_mode'] ?? 'off';
+        $data['dark_mode_from']   = $data['dark_mode_from'] ?? '21:00';
+        $data['dark_mode_to']     = $data['dark_mode_to']   ?? '06:00';
 
         if ($data['kleinunternehmer'] === '1') {
             $data['tax_rate'] = '0';
         }
 
         foreach ($data as $key => $value) {
-            Setting::set($key, $value);
+            Setting::set($key, $value ?? '');
         }
 
         return redirect()->route('settings.edit')->with('success', 'Einstellungen wurden gespeichert.');
@@ -113,13 +126,10 @@ class SettingController extends Controller
     }
 
     /**
-     * Sendet sofort eine Test-Wartungserinnerung an den eingeloggten Admin,
-     * um E-Mail-Versand und Konfiguration zu prüfen.
-     * Legt dafür ein temporäres MaintenanceEvent an, das danach wieder gelöscht wird.
+     * Sendet sofort eine Test-Wartungserinnerung an den eingeloggten Admin.
      */
     public function testMail(Request $request)
     {
-        // Erstes verfügbares Projekt als Platzhalter nehmen
         $project = Project::first();
 
         if (!$project) {
@@ -127,7 +137,6 @@ class SettingController extends Controller
                 ->with('error', 'Kein Projekt vorhanden. Bitte zuerst ein Projekt anlegen.');
         }
 
-        // Temporäres Test-Event (+1 Minute, damit der Zeitpunkt realistisch wirkt)
         $event = new MaintenanceEvent([
             'project_id'     => $project->id,
             'title'          => '🔧 Test-Wartungserinnerung',
@@ -137,18 +146,22 @@ class SettingController extends Controller
             'priority'       => 'medium',
             'notify'         => true,
         ]);
-        // Relation manuell setzen (kein DB-Save nötig)
         $event->setRelation('project', $project);
         $event->setRelation('assignedUser', null);
+
+        $subject = '🔧 Test-Wartungserinnerung';
 
         try {
             Mail::to(Auth::user()->email)
                 ->send(new MaintenanceReminder($event));
 
+            EmailLog::record('test_mail', Auth::user()->email, $subject, 'sent');
+
             return redirect()->route('settings.edit')
                 ->with('success', 'Test-E-Mail wurde erfolgreich an ' . Auth::user()->email . ' gesendet.');
         } catch (\Throwable $e) {
             Log::error('Test-Mail fehlgeschlagen: ' . $e->getMessage());
+            EmailLog::record('test_mail', Auth::user()->email, $subject, 'failed', $e->getMessage());
 
             return redirect()->route('settings.edit')
                 ->with('error', 'E-Mail-Versand fehlgeschlagen: ' . $e->getMessage());

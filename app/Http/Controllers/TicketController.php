@@ -6,6 +6,8 @@ use App\Mail\TicketCreatedAdmin;
 use App\Mail\TicketCreatedCustomer;
 use App\Mail\TicketRepliedAdmin;
 use App\Models\Customer;
+use App\Models\EmailLog;
+use App\Models\Setting;
 use App\Models\SupportCategory;
 use App\Models\Ticket;
 use App\Models\TicketMessage;
@@ -16,11 +18,19 @@ use Illuminate\Support\Facades\Mail;
 
 class TicketController extends Controller
 {
+    /** Public: Helpdesk-Startseite (Übersichtsseite) */
+    public function home()
+    {
+        $settings = Setting::getAll();
+        return view('helpdesk.home', compact('settings'));
+    }
+
     /** Public: Ticket-Formular anzeigen */
     public function create()
     {
+        $settings   = Setting::getAll();
         $categories = SupportCategory::orderBy('name')->get();
-        return view('helpdesk.submit', compact('categories'));
+        return view('helpdesk.submit', compact('categories', 'settings'));
     }
 
     /** Public: Ticket einreichen */
@@ -81,14 +91,16 @@ class TicketController extends Controller
     /** Public: Bestätigung nach Einreichung */
     public function submitted(string $ticketNumber)
     {
-        $ticket = Ticket::where('ticket_number', $ticketNumber)->firstOrFail();
-        return view('helpdesk.submitted', compact('ticket'));
+        $settings = Setting::getAll();
+        $ticket   = Ticket::where('ticket_number', $ticketNumber)->firstOrFail();
+        return view('helpdesk.submitted', compact('ticket', 'settings'));
     }
 
     /** Public: Ticket-Verlauf suchen (Formular) */
     public function trackForm()
     {
-        return view('helpdesk.track');
+        $settings = Setting::getAll();
+        return view('helpdesk.track', compact('settings'));
     }
 
     /** Public: Ticket-Verlauf suchen (POST) */
@@ -112,13 +124,14 @@ class TicketController extends Controller
     /** Public: Ticket-Verlauf anzeigen */
     public function conversation(Request $request, string $ticketNumber)
     {
-        $email  = $request->query('email');
-        $ticket = Ticket::where('ticket_number', $ticketNumber)
+        $settings = Setting::getAll();
+        $email    = $request->query('email');
+        $ticket   = Ticket::where('ticket_number', $ticketNumber)
             ->where('customer_email', $email)
             ->with(['messages' => fn ($q) => $q->where('is_worknote', false), 'supportCategory'])
             ->firstOrFail();
 
-        return view('helpdesk.conversation', compact('ticket', 'email'));
+        return view('helpdesk.conversation', compact('ticket', 'email', 'settings'));
     }
 
     /** Public: Nachricht zum Ticket hinzufügen */
@@ -149,7 +162,7 @@ class TicketController extends Controller
         if ($ticket->status === 'waiting') {
             $ticket->update([
                 'status'                   => 'in_progress',
-                'waiting_reminder_sent_at' => null, // Timer zurücksetzen
+                'waiting_reminder_sent_at' => null,
             ]);
         }
 
@@ -167,36 +180,53 @@ class TicketController extends Controller
 
     private function sendCustomerCreatedMail(Ticket $ticket): void
     {
+        $subject = 'Ihr Support-Ticket wurde erstellt – ' . $ticket->ticket_number;
         try {
             $ticket->load('supportCategory');
             Mail::to($ticket->customer_email)->send(new TicketCreatedCustomer($ticket));
+            EmailLog::record('ticket_created_customer', $ticket->customer_email, $subject, 'sent', null, $ticket->id);
         } catch (\Exception $e) {
-            Log::error('Fehler beim Senden der Ticket-Erstellungs-Benachrichtigung: ' . $e->getMessage());
+            Log::error('Fehler beim Senden der Ticket-Erstellungs-Benachrichtigung (Kunde): ' . $e->getMessage());
+            EmailLog::record('ticket_created_customer', $ticket->customer_email, $subject, 'failed', $e->getMessage(), $ticket->id);
         }
     }
 
     private function notifyAdminsTicketCreated(Ticket $ticket): void
     {
+        $subject = 'Neues Support-Ticket: ' . $ticket->ticket_number;
         try {
             $ticket->load('supportCategory', 'customer');
             $admins = User::where('role', 'admin')->where('is_active', true)->whereNotNull('email')->get();
             foreach ($admins as $admin) {
-                Mail::to($admin->email)->send(new TicketCreatedAdmin($ticket));
+                try {
+                    Mail::to($admin->email)->send(new TicketCreatedAdmin($ticket));
+                    EmailLog::record('ticket_created_admin', $admin->email, $subject, 'sent', null, $ticket->id);
+                } catch (\Exception $e) {
+                    Log::error('Fehler Admin-Benachrichtigung (Ticket erstellt): ' . $e->getMessage());
+                    EmailLog::record('ticket_created_admin', $admin->email, $subject, 'failed', $e->getMessage(), $ticket->id);
+                }
             }
         } catch (\Exception $e) {
-            Log::error('Fehler beim Senden der Ticket-Erstellungs-Benachrichtigung: ' . $e->getMessage());
+            Log::error('Fehler beim Laden der Admins: ' . $e->getMessage());
         }
     }
 
     private function notifyAdminsTicketReplied(Ticket $ticket, TicketMessage $message): void
     {
+        $subject = 'Neue Antwort auf Ticket: ' . $ticket->ticket_number;
         try {
             $admins = User::where('role', 'admin')->where('is_active', true)->whereNotNull('email')->get();
             foreach ($admins as $admin) {
-                Mail::to($admin->email)->send(new TicketRepliedAdmin($ticket, $message));
+                try {
+                    Mail::to($admin->email)->send(new TicketRepliedAdmin($ticket, $message));
+                    EmailLog::record('ticket_replied_admin', $admin->email, $subject, 'sent', null, $ticket->id);
+                } catch (\Exception $e) {
+                    Log::error('Fehler Admin-Benachrichtigung (Ticket beantwortet): ' . $e->getMessage());
+                    EmailLog::record('ticket_replied_admin', $admin->email, $subject, 'failed', $e->getMessage(), $ticket->id);
+                }
             }
         } catch (\Exception $e) {
-            Log::error('Fehler beim Senden der Ticket-Antwort-Benachrichtigung: ' . $e->getMessage());
+            Log::error('Fehler beim Laden der Admins: ' . $e->getMessage());
         }
     }
 }
