@@ -299,6 +299,7 @@
                     ['label' => 'Angebote',         'route' => 'quotes.index',            'icon' => 'ph-file-doc'],
                     ['label' => 'Verträge',         'route' => 'contracts.index',         'icon' => 'ph-files'],
                     ['label' => 'Rechnungen',       'route' => 'invoices.index',          'icon' => 'ph-file-text'],
+                    ['label' => 'Helpdesk',         'route' => 'helpdesk.index',       'icon' => 'ph-headset'],
                     ['label' => 'Team',             'route' => 'team.index',           'icon' => 'ph-users-three', 'admin_only' => true],
                     ['label' => 'Einstellungen',    'route' => 'settings.edit',        'icon' => 'ph-gear'],
                     ['label' => 'Export',           'route' => 'export-import.export', 'icon' => 'ph-export'],
@@ -309,6 +310,7 @@
                     'Übersicht'   => ['dashboard'],
                     'Verwaltung'  => ['customers.index', 'projects.index', 'work-categories.index'],
                     'Erfassung'   => ['time-entries.index', 'kanban.index', 'expenses.index', 'quotes.index', 'contracts.index', 'invoices.index'],
+                    'Support'     => ['helpdesk.index'],
                     'System'      => ['team.index', 'settings.edit', 'export-import.export', 'export-import.import'],
                 ];
             @endphp

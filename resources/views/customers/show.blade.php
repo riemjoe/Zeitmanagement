@@ -142,6 +142,93 @@
                 @endforelse
             </div>
         </div>
+
+        {{-- SLA-Zeiten --}}
+        <div x-data="{ showSlaModal: false }" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+            <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                <h3 class="font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+                    <i class="ph-bold ph-clock text-blue-500"></i> SLA-Zeiten (Helpdesk)
+                </h3>
+                <button @click="showSlaModal = true"
+                    class="text-sm text-blue-600 hover:underline flex items-center gap-1">
+                    <i class="ph-bold ph-pencil-simple"></i> Bearbeiten
+                </button>
+            </div>
+
+            @php
+                $slaSettings = $customer->slaSettings()->with('supportCategory')->get()->keyBy('support_category_id');
+                $allCategories = \App\Models\SupportCategory::orderBy('name')->get();
+            @endphp
+
+            @if ($allCategories->isEmpty())
+                <div class="px-5 py-6 text-center text-sm text-gray-400">
+                    Noch keine Support-Kategorien definiert.
+                </div>
+            @else
+                <div class="divide-y divide-gray-50 dark:divide-gray-700">
+                    @foreach ($allCategories as $cat)
+                        @php $sla = $slaSettings->get($cat->id); @endphp
+                        <div class="px-5 py-3 flex items-center justify-between text-sm">
+                            <span class="text-gray-700 dark:text-gray-300">{{ $cat->name }}</span>
+                            @if ($sla)
+                                <span class="text-blue-600 font-medium">{{ $sla->sla_hours }} Stunden</span>
+                            @else
+                                <span class="text-gray-400 text-xs">Nicht festgelegt</span>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
+            {{-- SLA-Modal --}}
+            <div x-show="showSlaModal" x-cloak
+                class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                @keydown.escape.window="showSlaModal = false">
+                <div @click.outside="showSlaModal = false"
+                    class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg">
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="ph-bold ph-clock text-blue-500"></i> SLA-Zeiten bearbeiten
+                        </h2>
+                        <button @click="showSlaModal = false" class="text-gray-400 hover:text-gray-600">
+                            <i class="ph-bold ph-x text-lg"></i>
+                        </button>
+                    </div>
+                    <div class="p-6">
+                        <p class="text-sm text-gray-500 mb-4">Legen Sie die Antwortzeiten (in Stunden) für jede Support-Kategorie fest. Leer lassen bedeutet kein SLA für diese Kategorie.</p>
+                        <form action="{{ route('customers.sla.update', $customer) }}" method="POST" class="space-y-3">
+                            @csrf @method('PUT')
+                            @foreach ($allCategories as $cat)
+                                @php $sla = $slaSettings->get($cat->id); @endphp
+                                <div class="flex items-center justify-between gap-4">
+                                    <label class="text-sm text-gray-700 dark:text-gray-300 flex-1">
+                                        {{ $cat->name }}
+                                        <span class="text-xs text-gray-400">({{ $cat->priority_label }})</span>
+                                    </label>
+                                    <div class="flex items-center gap-2">
+                                        <input type="number" name="sla[{{ $cat->id }}]"
+                                            value="{{ $sla?->sla_hours ?? '' }}"
+                                            min="1" max="8760" placeholder="—"
+                                            class="w-24 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <span class="text-xs text-gray-400">Std.</span>
+                                    </div>
+                                </div>
+                            @endforeach
+                            <div class="flex gap-3 pt-2">
+                                <button type="submit"
+                                    class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition">
+                                    <i class="ph-bold ph-floppy-disk mr-1"></i> Speichern
+                                </button>
+                                <button type="button" @click="showSlaModal = false"
+                                    class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg transition">
+                                    Abbrechen
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 @endsection

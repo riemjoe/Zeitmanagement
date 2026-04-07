@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\CustomerSlaSetting;
 use Illuminate\Http\Request;
 
 class CustomerController extends Controller
@@ -70,5 +71,27 @@ class CustomerController extends Controller
         }
         $customer->delete();
         return redirect()->route('customers.index')->with('success', 'Kunde wurde gelöscht.');
+    }
+
+    /** SLA-Zeiten pro Support-Kategorie für einen Kunden speichern */
+    public function updateSla(Request $request, Customer $customer)
+    {
+        $slaData = $request->input('sla', []);
+
+        foreach ($slaData as $categoryId => $hours) {
+            if ($hours !== null && $hours !== '') {
+                CustomerSlaSetting::updateOrCreate(
+                    ['customer_id' => $customer->id, 'support_category_id' => $categoryId],
+                    ['sla_hours' => (int) $hours]
+                );
+            } else {
+                // Leer = SLA entfernen
+                CustomerSlaSetting::where('customer_id', $customer->id)
+                    ->where('support_category_id', $categoryId)
+                    ->delete();
+            }
+        }
+
+        return back()->with('success', 'SLA-Zeiten wurden gespeichert.');
     }
 }

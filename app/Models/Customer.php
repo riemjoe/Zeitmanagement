@@ -28,6 +28,16 @@ class Customer extends Model
         return $this->hasMany(Contract::class);
     }
 
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(Ticket::class);
+    }
+
+    public function slaSettings(): HasMany
+    {
+        return $this->hasMany(CustomerSlaSetting::class);
+    }
+
     /**
      * Vollständige Adresse als String.
      */

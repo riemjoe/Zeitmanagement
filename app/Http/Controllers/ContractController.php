@@ -7,6 +7,7 @@ use App\Models\ContractTemplate;
 use App\Models\Customer;
 use App\Models\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ContractController extends Controller
 {
@@ -101,15 +102,14 @@ class ContractController extends Controller
     {
         // Signierte PDF löschen, falls vorhanden
         if ($contract->signed_pdf_path) {
-            $path = public_path('uploads/contracts/' . basename($contract->signed_pdf_path));
-            if (file_exists($path)) @unlink($path);
+            Storage::delete('contracts/' . $contract->signed_pdf_path);
         }
         $contract->delete();
         return redirect()->route('contracts.index')
             ->with('success', 'Vertrag wurde gelöscht.');
     }
 
-    /** Signierte PDF hochladen */
+    /** Signierte PDF hochladen (gespeichert außerhalb von public/) */
     public function uploadPdf(Request $request, Contract $contract)
     {
         $request->validate([
@@ -118,13 +118,11 @@ class ContractController extends Controller
 
         // Altes PDF löschen
         if ($contract->signed_pdf_path) {
-            $oldPath = public_path('uploads/contracts/' . basename($contract->signed_pdf_path));
-            if (file_exists($oldPath)) @unlink($oldPath);
+            Storage::delete('contracts/' . $contract->signed_pdf_path);
         }
 
-        $file     = $request->file('signed_pdf');
         $filename = 'contract-' . $contract->id . '-signed-' . time() . '.pdf';
-        $file->move(public_path('uploads/contracts'), $filename);
+        $request->file('signed_pdf')->storeAs('contracts', $filename);
 
         $contract->update([
             'signed_pdf_path' => $filename,
@@ -133,6 +131,22 @@ class ContractController extends Controller
 
         return redirect()->route('contracts.show', $contract)
             ->with('success', 'Signiertes Dokument wurde hochgeladen. Status auf „Unterzeichnet" gesetzt.');
+    }
+
+    /** Signierte PDF herunterladen (nur für eingeloggte Nutzer) */
+    public function downloadPdf(Contract $contract)
+    {
+        if (! $contract->signed_pdf_path) {
+            abort(404, 'Kein signiertes Dokument vorhanden.');
+        }
+
+        $path = 'contracts/' . $contract->signed_pdf_path;
+
+        if (! Storage::exists($path)) {
+            abort(404, 'Datei nicht gefunden.');
+        }
+
+        return Storage::download($path, 'Vertrag-' . $contract->id . '-signiert.pdf');
     }
 
     /** Vorlage für einen Kunden rendern (AJAX) */

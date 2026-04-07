@@ -49,10 +49,10 @@ class Contract extends Model
         };
     }
 
-    /** Pfad zur signierten PDF-Datei (öffentlich erreichbar). */
+    /** Geschützte Download-URL für die signierte PDF (nur eingeloggte Nutzer). */
     public function getSignedPdfUrlAttribute(): ?string
     {
         if (!$this->signed_pdf_path) return null;
-        return asset('uploads/contracts/' . basename($this->signed_pdf_path));
+        return route('contracts.download-pdf', $this->id);
     }
 }
