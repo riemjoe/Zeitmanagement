@@ -23,6 +23,9 @@ use App\Http\Controllers\SupportCategoryController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\RecurringTaskController;
+use App\Http\Controllers\SurveyTemplateController;
+use App\Http\Controllers\SurveyController;
+use App\Http\Controllers\PublicSurveyController;
 
 // ── Authentifizierung (öffentlich) ──────────────────────────────────────────
 Route::get('/login',  [AuthController::class, 'showLogin'])->name('login');
@@ -31,6 +34,11 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // ── Öffentliche Helpdesk-Startseite ─────────────────────────────────────────
 Route::get('/', [TicketController::class, 'home'])->name('helpdesk.home');
+
+// ── Öffentliche Umfragen (kein Login erforderlich) ──────────────────────────
+Route::get('/survey/{token}',  [PublicSurveyController::class, 'show'])->name('survey.show');
+Route::post('/survey/{token}', [PublicSurveyController::class, 'submit'])->name('survey.submit')
+    ->middleware('throttle:20,5');
 
 // ── Öffentliche Helpdesk-Routen (kein Login erforderlich) ───────────────────
 // Schreib-Routen: max. 10 Anfragen pro 5 Minuten pro IP
@@ -148,6 +156,15 @@ Route::middleware('auth.simple')->prefix('admin')->group(function () {
 
     // Kunden SLA-Zeiten
     Route::put('/customers/{customer}/sla',             [CustomerController::class, 'updateSla'])->name('customers.sla.update');
+
+    // Bewertungssystem – Fragebögen
+    Route::resource('survey-templates', SurveyTemplateController::class);
+
+    // Bewertungssystem – Umfragen
+    Route::get('/surveys/global', [SurveyController::class, 'globalStats'])->name('surveys.global');
+    Route::get('/surveys/{survey}/responses/{response}', [SurveyController::class, 'showResponse'])->name('surveys.responses.show');
+    Route::delete('/surveys/{survey}/responses/{response}', [SurveyController::class, 'destroyResponse'])->name('surveys.responses.destroy');
+    Route::resource('surveys', SurveyController::class);
 
     // Admin-only Routen
     Route::middleware('ensure.admin')->group(function () {
