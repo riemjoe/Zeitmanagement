@@ -51,6 +51,20 @@
 - E-Mail-Erinnerungen vor dem Termin (konfigurierbar)
 - Wiederkehrende Aufgaben mit `is_maintenance`-Flag erscheinen automatisch im Kalender
 
+### ⭐ Bewertungssystem
+- **Fragebögen** mit beliebig vielen Abschnitten (Sektionen) und Fragen erstellen
+- Vier Fragetypen: **Schieberegler** (Range), **Zahl**, **Freitext** und **Auswahl** (Radio-Select)
+- Jede Frage kann als Pflichtfeld oder optionales Feld markiert werden
+- **Scoring pro Frage**: Range/Zahl-Fragen haben konfigurierbare Schwellen (`good_from` → 100 Pkt, `bad_to` → 0 Pkt) mit linearer Interpolation dazwischen; Select-Optionen bekommen je einen direkten Score-Wert (0–100); Textfragen sind informativ und fließen nicht ins Ergebnis ein
+- **Gewichtung** pro Frage (1×–5×): wichtigere Fragen haben mehr Einfluss auf den Gesamtscore
+- Fragebogen-weite Schwellen definieren ab wann eine Ausfüllung als **Gut** (≥ X Punkte) oder **Schlecht** (≤ Y Punkte) gilt
+- **Umfragen** auf Basis eines Fragebogens erstellen, optional einem Kunden zuweisen
+- Maximale Antwortanzahl und Ablaufdatum pro Umfrage konfigurierbar
+- Jede Umfrage hat eine eindeutige **öffentliche URL** (`/survey/{token}`) – kein Login erforderlich
+- Öffentliche Ausfüll-Seite: responsiv, mit Live-Slider für Range-Fragen, Score-Anzeige nach dem Absenden
+- **Auswertung pro Umfrage**: Ø Score, Balkendiagramm je Frage, Gut/Neutral/Schlecht-Verteilung, Einzelantworten mit Details
+- **Globale Auswertung** über alle Umfragen: aggregierter Ø Score und Verdict-Verteilung
+
 ### 🎧 Helpdesk
 - **Öffentliches Ticket-Portal** (kein Login erforderlich): Kunden können Tickets einreichen und per Ticket-Nummer den Status verfolgen
 - E-Mail-Benachrichtigungen: Eingangsbestätigung an Kunden, Benachrichtigung ans Admin-Team, Antwort-Mails
@@ -181,6 +195,13 @@ Für wiederkehrende Aufgaben und automatische Erinnerungen den Laravel-Scheduler
 | `tickets` | Helpdesk-Tickets (öffentlich einreichbar) |
 | `ticket_messages` | Konversationsverlauf pro Ticket |
 | `email_logs` | Protokoll versendeter E-Mails |
+| `survey_templates` | Fragebogen-Vorlagen mit Scoring-Schwellen |
+| `survey_sections` | Abschnitte innerhalb eines Fragebogens |
+| `survey_questions` | Fragen mit Typ, Gewichtung und Bewertungseinstellungen |
+| `survey_options` | Antwortoptionen für Select-Fragen mit Score-Wert |
+| `surveys` | Umfrage-Instanzen mit öffentlichem Token |
+| `survey_responses` | Eingereichte Antworten mit berechnetem Gesamtscore |
+| `survey_answers` | Einzelantworten pro Frage und Ausfüllung |
 
 ---
 
