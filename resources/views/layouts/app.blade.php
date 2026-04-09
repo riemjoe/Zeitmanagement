@@ -684,6 +684,15 @@
 @stack('scripts')
 
 <script>
+const TIMER_URLS = {
+    start:      '{{ route('timer.start') }}',
+    stop:       '{{ route('timer.stop') }}',
+    cancel:     '{{ route('timer.cancel') }}',
+    pause:      '{{ route('timer.pause') }}',
+    resume:     '{{ route('timer.resume') }}',
+    tasksJson:  '{{ url('admin/projects') }}',
+};
+
 function timerWidget(initialRunning, initialElapsed, initialProject, initialCategory,
                      initialCustomer, initialHourlyRate, initialDescription, initialPaused) {
     return {
@@ -731,7 +740,7 @@ function timerWidget(initialRunning, initialElapsed, initialProject, initialCate
             this.startTasks = [];
             if (!this.startProject) return;
             try {
-                const res = await fetch(`/projects/${this.startProject}/tasks-json`, {
+                const res = await fetch(`${TIMER_URLS.tasksJson}/${this.startProject}/tasks-json`, {
                     headers: { 'Accept': 'application/json' },
                 });
                 this.startTasks = await res.json();
@@ -747,7 +756,7 @@ function timerWidget(initialRunning, initialElapsed, initialProject, initialCate
 
         async startTimer() {
             if (!this.startProject || !this.startCategory) return;
-            const res = await this._post('/timer/start', {
+            const res = await this._post(TIMER_URLS.start, {
                 project_id:       this.startProject,
                 work_category_id: this.startCategory,
                 description:      this.startDescription,
@@ -766,7 +775,7 @@ function timerWidget(initialRunning, initialElapsed, initialProject, initialCate
         },
 
         async stopTimer() {
-            const res = await this._post('/timer/stop', { description: this.stopDescription });
+            const res = await this._post(TIMER_URLS.stop, { description: this.stopDescription });
             clearInterval(this._interval);
             this.running         = false;
             this.elapsed         = 0;
@@ -776,7 +785,7 @@ function timerWidget(initialRunning, initialElapsed, initialProject, initialCate
         },
 
         async cancelTimer() {
-            await this._post('/timer/cancel', {});
+            await this._post(TIMER_URLS.cancel, {});
             clearInterval(this._interval);
             this.running     = false;
             this.elapsed     = 0;
@@ -784,7 +793,7 @@ function timerWidget(initialRunning, initialElapsed, initialProject, initialCate
         },
 
         async pauseTimer() {
-            const res = await this._post('/timer/pause', {});
+            const res = await this._post(TIMER_URLS.pause, {});
             if (res.paused === true) {
                 this.paused = true;
                 clearInterval(this._interval);
@@ -793,7 +802,7 @@ function timerWidget(initialRunning, initialElapsed, initialProject, initialCate
         },
 
         async resumeTimer() {
-            const res = await this._post('/timer/resume', {});
+            const res = await this._post(TIMER_URLS.resume, {});
             if (res.running === true && res.paused === false) {
                 this.paused = false;
                 this._tick();

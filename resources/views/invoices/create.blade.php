@@ -245,7 +245,7 @@ function invoiceForm() {
             this.selectedTimeEntries = [];
             this.selectedExpenses = [];
             try {
-                const res = await fetch(`/invoices/billable-items?customer_id=${this.customerId}`, {
+                const res = await fetch(`{{ route('invoices.billable-items') }}?customer_id=${this.customerId}`, {
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                         'Accept': 'application/json',
