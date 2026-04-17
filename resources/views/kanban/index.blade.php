@@ -210,7 +210,7 @@ $colConfig = [
                 {{-- Formular --}}
                 <form :id="editId ? 'form-edit' : 'form-new'"
                       :method="editId ? 'POST' : 'POST'"
-                      :action="editId ? '/kanban/tasks/' + editId : '{{ route('kanban.store') }}'"
+                      :action="editId ? '{{ url('admin/kanban/tasks') }}/' + editId : '{{ route('kanban.store') }}'"
                       class="px-6 py-5 space-y-4">
                     @csrf
                     <template x-if="editId"><input type="hidden" name="_method" value="PUT"></template>
@@ -392,7 +392,7 @@ function kanbanBoard() {
         async deleteTask() {
             if (!confirm('Aufgabe wirklich löschen?')) return;
             const csrf = document.querySelector('meta[name="csrf-token"]').content;
-            const res  = await fetch('/kanban/tasks/' + this.editId, {
+            const res  = await fetch('{{ url('admin/kanban/tasks') }}/' + this.editId, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
                 body: JSON.stringify({ _method: 'DELETE' }),
@@ -405,10 +405,12 @@ function kanbanBoard() {
 
         _persist(taskId, status, position, siblings) {
             const csrf = document.querySelector('meta[name="csrf-token"]').content;
-            fetch('/kanban/tasks/' + taskId + '/status', {
+            fetch('{{ url('admin/kanban/tasks') }}/' + taskId + '/status', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
                 body: JSON.stringify({ kanban_status: status, position, siblings }),
+            }).then(res => {
+                if (!res.ok) console.error('Kanban-Update fehlgeschlagen: HTTP', res.status);
             }).catch(e => console.error('Kanban-Update fehlgeschlagen:', e));
         },
 
