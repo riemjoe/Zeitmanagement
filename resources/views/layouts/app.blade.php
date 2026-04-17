@@ -932,5 +932,157 @@ function globalSearch() {
     }
 })();
 </script>
+
+{{-- ── Globales Aufgaben-Chat-Popup ─────────────────────────────────────────── --}}
+<div x-data="taskChatPopup()"
+     @task-chat:open.window="openFor($event.detail.taskId, $event.detail.title)"
+     x-show="isOpen"
+     x-cloak
+     x-transition:enter="transition ease-out duration-150"
+     x-transition:enter-start="opacity-0 translate-y-4"
+     x-transition:enter-end="opacity-100 translate-y-0"
+     x-transition:leave="transition ease-in duration-100"
+     x-transition:leave-start="opacity-100 translate-y-0"
+     x-transition:leave-end="opacity-0 translate-y-4"
+     class="fixed bottom-4 right-4 z-[9998] w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col"
+     style="height:480px;">
+
+    {{-- Header --}}
+    <div class="px-4 py-3 border-b border-gray-100 flex items-center gap-2 rounded-t-2xl bg-indigo-600 text-white shrink-0">
+        <i class="ph-bold ph-chat-dots text-base"></i>
+        <span class="flex-1 text-sm font-semibold truncate" x-text="taskTitle"></span>
+        <button @click="isOpen = false"
+                class="p-1 hover:bg-white/20 rounded-lg transition-colors ml-1">
+            <i class="ph-bold ph-x text-sm"></i>
+        </button>
+    </div>
+
+    {{-- Nachrichtenliste --}}
+    <div class="flex-1 overflow-y-auto p-3 space-y-3 bg-gray-50" x-ref="popupScroll">
+        <template x-if="loading">
+            <div class="flex justify-center items-center h-full">
+                <div class="flex items-center gap-2 text-gray-400 text-xs">
+                    <svg class="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    Lade …
+                </div>
+            </div>
+        </template>
+        <template x-if="!loading && comments.length === 0">
+            <div class="flex flex-col items-center justify-center h-full text-center">
+                <i class="ph-bold ph-chat-circle-dots text-gray-300 text-3xl mb-2"></i>
+                <p class="text-xs text-gray-400">Noch keine Kommentare.<br>Schreib den ersten!</p>
+            </div>
+        </template>
+        <template x-for="c in comments" :key="c.id">
+            <div class="flex gap-2 group" :class="c.my_comment ? 'flex-row-reverse' : ''">
+                <div class="w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-xs font-bold"
+                     :class="c.my_comment ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-600'"
+                     x-text="c.user_name.charAt(0).toUpperCase()"></div>
+                <div class="max-w-[78%]" :class="c.my_comment ? 'items-end' : 'items-start'" style="display:flex;flex-direction:column;">
+                    <div class="px-3 py-2 rounded-2xl text-sm leading-relaxed"
+                         :class="c.my_comment
+                            ? 'bg-indigo-600 text-white rounded-tr-sm'
+                            : 'bg-white border border-gray-200 text-gray-800 rounded-tl-sm'"
+                         x-text="c.body"></div>
+                    <div class="flex items-center gap-1.5 mt-1 px-1" :class="c.my_comment ? 'flex-row-reverse' : ''">
+                        <span class="text-[10px] text-gray-400" x-text="c.user_name + ' · ' + c.created_at"></span>
+                        <button x-show="c.my_comment" @click="remove(c.id)"
+                                class="text-gray-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 text-[10px]">
+                            <i class="ph-bold ph-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    {{-- Eingabe --}}
+    <div class="border-t border-gray-200 p-2 flex gap-2 items-end bg-white rounded-b-2xl shrink-0">
+        <textarea x-model="newBody" rows="1"
+                  placeholder="Kommentar … (Strg+Enter)"
+                  @keydown.ctrl.enter.prevent="post()"
+                  @input="$event.target.style.height='auto'; $event.target.style.height=Math.min($event.target.scrollHeight,80)+'px'"
+                  class="flex-1 border-0 focus:outline-none focus:ring-0 text-sm resize-none bg-transparent placeholder-gray-400 py-1.5"
+                  style="max-height:80px;overflow-y:auto;"></textarea>
+        <button @click="post()" :disabled="!newBody.trim()"
+                class="p-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-sm transition-colors shrink-0">
+            <i class="ph-bold ph-paper-plane-tilt"></i>
+        </button>
+    </div>
+</div>
+
+<script>
+function taskChatPopup() {
+    return {
+        isOpen:    false,
+        taskId:    null,
+        taskTitle: '',
+        comments:  [],
+        newBody:   '',
+        loading:   false,
+
+        openFor(id, title) {
+            if (this.isOpen && this.taskId === id) { this.isOpen = false; return; }
+            this.taskId    = id;
+            this.taskTitle = title || 'Aufgabe';
+            this.isOpen    = true;
+            this.load();
+        },
+
+        async load() {
+            if (!this.taskId) return;
+            this.loading  = true;
+            this.comments = [];
+            try {
+                const res = await fetch('/admin/kanban/tasks/' + this.taskId + '/comments', {
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                });
+                this.comments = await res.json();
+            } finally {
+                this.loading = false;
+                this.$nextTick(() => this.scrollDown());
+            }
+        },
+
+        scrollDown() {
+            const el = this.$refs.popupScroll;
+            if (el) el.scrollTop = el.scrollHeight;
+        },
+
+        async post() {
+            if (!this.newBody.trim() || !this.taskId) return;
+            const body = this.newBody;
+            this.newBody = '';
+            const csrf = document.querySelector('meta[name="csrf-token"]').content;
+            const res = await fetch('/admin/kanban/tasks/' + this.taskId + '/comments', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+                body:    JSON.stringify({ body }),
+            });
+            if (res.ok) {
+                const comment = await res.json();
+                this.comments.push(comment);
+                this.$nextTick(() => this.scrollDown());
+            } else {
+                this.newBody = body;
+            }
+        },
+
+        async remove(id) {
+            if (!confirm('Kommentar löschen?')) return;
+            const csrf = document.querySelector('meta[name="csrf-token"]').content;
+            const res = await fetch('/admin/task-comments/' + id, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+                body:    JSON.stringify({ _method: 'DELETE' }),
+            });
+            if (res.ok) this.comments = this.comments.filter(c => c.id !== id);
+        },
+    };
+}
+</script>
 </body>
 </html>

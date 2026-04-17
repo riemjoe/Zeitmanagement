@@ -112,8 +112,14 @@ $colConfig = [
 
                 <div class="flex items-start gap-2 mb-2">
                     <p class="flex-1 text-sm font-medium text-gray-800 leading-snug">{{ $task->title }}</p>
+                    <button @click.stop="$dispatch('task-chat:open', { taskId: {{ $task->id }}, title: {{ json_encode($task->title) }} })"
+                            class="shrink-0 text-gray-300 hover:text-indigo-500 transition-colors p-0.5 rounded"
+                            title="Chat öffnen">
+                        <i class="ph-bold ph-chat-dots text-sm"></i>
+                    </button>
                     <button @click="openEdit({{ $task->id }}, $el.closest('[data-task]').dataset.task)"
-                            class="shrink-0 text-gray-300 hover:text-indigo-500 transition-colors p-0.5 rounded">
+                            class="shrink-0 text-gray-300 hover:text-indigo-500 transition-colors p-0.5 rounded"
+                            title="Bearbeiten">
                         <i class="ph-bold ph-pencil-simple text-sm"></i>
                     </button>
                 </div>
@@ -322,79 +328,15 @@ $colConfig = [
                     </div>
                 </form>
 
-                {{-- Kommentare (nur beim Bearbeiten) --}}
+                {{-- Chat-Hinweis (nur beim Bearbeiten) --}}
                 <template x-if="editId">
-                    <div class="border-t border-gray-100 mt-1"
-                         x-data="taskComments()"
-                         x-init="load($el.closest('[x-data]').__x.$data.editId)">
-
-                        <div class="flex items-center gap-2 px-1 py-3">
-                            <i class="ph-bold ph-chat-dots text-indigo-500 text-sm"></i>
-                            <span class="text-sm font-semibold text-gray-700">Kommentare</span>
-                            <span class="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full" x-text="comments.length"></span>
-                        </div>
-
-                        {{-- Chat-Bereich --}}
-                        <div class="bg-gray-50 rounded-xl border border-gray-100 flex flex-col" style="height: 280px;">
-                            {{-- Nachrichtenliste --}}
-                            <div class="flex-1 overflow-y-auto p-3 space-y-3" x-ref="chatScroll">
-                                <template x-if="loading">
-                                    <div class="flex justify-center items-center h-full">
-                                        <div class="flex items-center gap-2 text-gray-400 text-xs">
-                                            <svg class="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
-                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                                            </svg>
-                                            Lade …
-                                        </div>
-                                    </div>
-                                </template>
-                                <template x-if="!loading && comments.length === 0">
-                                    <div class="flex flex-col items-center justify-center h-full text-center">
-                                        <i class="ph-bold ph-chat-circle-dots text-gray-300 text-3xl mb-2"></i>
-                                        <p class="text-xs text-gray-400">Noch keine Kommentare.<br>Schreiben Sie den ersten!</p>
-                                    </div>
-                                </template>
-                                <template x-for="c in comments" :key="c.id">
-                                    <div class="flex gap-2 group" :class="c.my_comment ? 'flex-row-reverse' : ''">
-                                        {{-- Avatar --}}
-                                        <div class="w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-xs font-bold"
-                                             :class="c.my_comment ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-600'"
-                                             x-text="c.user_name.charAt(0).toUpperCase()"></div>
-                                        {{-- Bubble --}}
-                                        <div class="max-w-[78%]" :class="c.my_comment ? 'items-end' : 'items-start'" style="display:flex;flex-direction:column;">
-                                            <div class="px-3 py-2 rounded-2xl text-sm leading-relaxed"
-                                                 :class="c.my_comment
-                                                    ? 'bg-indigo-600 text-white rounded-tr-sm'
-                                                    : 'bg-white border border-gray-200 text-gray-800 rounded-tl-sm'"
-                                                 x-text="c.body"></div>
-                                            <div class="flex items-center gap-1.5 mt-1 px-1"
-                                                 :class="c.my_comment ? 'flex-row-reverse' : ''">
-                                                <span class="text-[10px] text-gray-400" x-text="c.user_name + ' · ' + c.created_at"></span>
-                                                <button x-show="c.my_comment" @click="deleteComment(c.id)"
-                                                        class="text-gray-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 text-[10px]">
-                                                    <i class="ph-bold ph-trash"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
-                            </div>
-
-                            {{-- Eingabebereich --}}
-                            <div class="border-t border-gray-200 p-2 flex gap-2 items-end bg-white rounded-b-xl">
-                                <textarea x-model="newBody" rows="1"
-                                          placeholder="Kommentar schreiben … (Strg+Enter)"
-                                          @keydown.ctrl.enter.prevent="postComment()"
-                                          @input="$event.target.style.height='auto'; $event.target.style.height=Math.min($event.target.scrollHeight, 80)+'px'"
-                                          class="flex-1 border-0 focus:outline-none focus:ring-0 text-sm resize-none bg-transparent placeholder-gray-400 py-1.5"
-                                          style="max-height:80px;overflow-y:auto;"></textarea>
-                                <button @click="postComment()" :disabled="!newBody.trim()"
-                                        class="p-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-sm transition-colors shrink-0">
-                                    <i class="ph-bold ph-paper-plane-tilt"></i>
-                                </button>
-                            </div>
-                        </div>
+                    <div class="border-t border-gray-100 px-6 py-3">
+                        <button type="button"
+                                @click="open = false; $nextTick(() => $dispatch('task-chat:open', { taskId: editId, title: f.title }))"
+                                class="flex items-center gap-2 text-sm text-indigo-500 hover:text-indigo-700 transition-colors">
+                            <i class="ph-bold ph-chat-dots"></i>
+                            Kommentare im Chat öffnen
+                        </button>
                     </div>
                 </template>
             </div>
@@ -514,63 +456,5 @@ function kanbanBoard() {
     };
 }
 
-function taskComments() {
-    return {
-        comments: [],
-        newBody:  '',
-        loading:  false,
-        taskId:   null,
-
-        async load(id) {
-            if (!id) return;
-            this.taskId = id;
-            this.loading = true;
-            try {
-                const res = await fetch('{{ url('admin/kanban/tasks') }}/' + id + '/comments', {
-                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
-                });
-                this.comments = await res.json();
-            } finally {
-                this.loading = false;
-                this.$nextTick(() => this.scrollToBottom());
-            }
-        },
-
-        scrollToBottom() {
-            const el = this.$refs.chatScroll;
-            if (el) el.scrollTop = el.scrollHeight;
-        },
-
-        async postComment() {
-            if (!this.newBody.trim() || !this.taskId) return;
-            const csrf = document.querySelector('meta[name="csrf-token"]').content;
-            const body = this.newBody;
-            this.newBody = '';
-            const res = await fetch('{{ url('admin/kanban/tasks') }}/' + this.taskId + '/comments', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
-                body: JSON.stringify({ body }),
-            });
-            if (res.ok) {
-                const comment = await res.json();
-                this.comments.push(comment);
-                this.$nextTick(() => this.scrollToBottom());
-            } else {
-                this.newBody = body; // restore on error
-            }
-        },
-
-        async deleteComment(id) {
-            if (!confirm('Kommentar löschen?')) return;
-            const csrf = document.querySelector('meta[name="csrf-token"]').content;
-            const res = await fetch('{{ url('admin/task-comments') }}/' + id, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
-                body: JSON.stringify({ _method: 'DELETE' }),
-            });
-            if (res.ok) this.comments = this.comments.filter(c => c.id !== id);
-        },
-    };
-}
 </script>
 @endpush

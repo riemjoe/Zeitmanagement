@@ -262,6 +262,13 @@
                       :title="{ low: 'Niedrig', medium: 'Mittel', high: 'Hoch' }[todo.priority]">
                 </span>
 
+                {{-- Chat --}}
+                <button @click="$dispatch('task-chat:open', { taskId: todo.id, title: todo.title })"
+                        class="shrink-0 text-gray-300 hover:text-indigo-500 opacity-0 group-hover:opacity-100 transition-all"
+                        title="Chat öffnen">
+                    <i class="ph-bold ph-chat-dots text-sm"></i>
+                </button>
+
                 {{-- Löschen --}}
                 <button @click="removeTodo(todo)"
                         class="shrink-0 text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all">
@@ -764,7 +771,7 @@ function todoList(initialTodos) {
 
         async toggle(todo) {
             try {
-                const res = await fetch(`/todos/${todo.id}/toggle`, {
+                const res = await fetch(`/admin/todos/${todo.id}/toggle`, {
                     method:  'PATCH',
                     headers: {
                         'Accept':       'application/json',
@@ -780,7 +787,7 @@ function todoList(initialTodos) {
         async addTodo() {
             if (!this.newTitle.trim()) return;
             try {
-                const res = await fetch(`/projects/{{ $project->id }}/todos`, {
+                const res = await fetch(`/admin/projects/{{ $project->id }}/todos`, {
                     method:  'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -816,7 +823,7 @@ function todoList(initialTodos) {
         async removeTodo(todo) {
             if (!confirm('Aufgabe löschen?')) return;
             try {
-                await fetch(`/todos/${todo.id}`, {
+                await fetch(`/admin/todos/${todo.id}`, {
                     method:  'DELETE',
                     headers: {
                         'Accept':       'application/json',
