@@ -26,14 +26,54 @@ use App\Http\Controllers\RecurringTaskController;
 use App\Http\Controllers\SurveyTemplateController;
 use App\Http\Controllers\SurveyController;
 use App\Http\Controllers\PublicSurveyController;
+use App\Http\Controllers\TaskCommentController;
+use App\Http\Controllers\MilestoneController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\TwoFactorController;
+use App\Http\Controllers\CustomerPortalController;
+use App\Http\Controllers\ProjectMessageController;
 
 // ── Authentifizierung (öffentlich) ──────────────────────────────────────────
 Route::get('/login',  [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+// ── 2FA-Verifikation (nach Login, vor Dashboard-Zugang) ─────────────────────
+Route::get('/2fa/verify',  [TwoFactorController::class, 'showVerify'])->name('2fa.verify');
+Route::post('/2fa/verify', [TwoFactorController::class, 'verify'])->name('2fa.verify.post')->middleware('throttle:10,1');
+
 // ── Öffentliche Helpdesk-Startseite ─────────────────────────────────────────
 Route::get('/', [TicketController::class, 'home'])->name('helpdesk.home');
+
+// ── Kunden-Portal ────────────────────────────────────────────────────────────
+Route::prefix('portal')->name('portal.')->group(function () {
+    // Öffentliche Portal-Routen
+    Route::get('/login',  [CustomerPortalController::class, 'showLogin'])->name('login');
+    Route::post('/login', [CustomerPortalController::class, 'login'])->middleware('throttle:10,5')->name('login.post');
+    Route::post('/logout', [CustomerPortalController::class, 'logout'])->name('logout');
+    Route::get('/invitation/{token}', [CustomerPortalController::class, 'acceptInvitation'])->name('invitation');
+
+    // Passwortänderung (nur session-auth, ohne volle Portal-Auth da must_change_password gesetzt sein kann)
+    Route::middleware(\App\Http\Middleware\CustomerPortalAuth::class)->group(function () {
+        Route::get('/change-password',  [CustomerPortalController::class, 'showChangePassword'])->name('change-password');
+        Route::post('/change-password', [CustomerPortalController::class, 'changePassword'])->name('change-password.post');
+
+        // 2FA
+        Route::get('/2fa/prompt',   [CustomerPortalController::class, 'show2faPrompt'])->name('2fa.prompt');
+        Route::get('/2fa/setup',    [CustomerPortalController::class, 'show2faSetup'])->name('2fa.setup');
+        Route::post('/2fa/setup',   [CustomerPortalController::class, 'confirm2faSetup'])->name('2fa.setup.confirm');
+        Route::get('/2fa/backup-codes', [CustomerPortalController::class, 'showBackupCodes'])->name('2fa.backup-codes');
+        Route::get('/2fa/verify',   [CustomerPortalController::class, 'show2faVerify'])->name('2fa.verify');
+        Route::post('/2fa/verify',  [CustomerPortalController::class, 'verify2fa'])->middleware('throttle:10,5')->name('2fa.verify.post');
+
+        // Portal-Hauptseiten
+        Route::get('/dashboard', [CustomerPortalController::class, 'dashboard'])->name('dashboard');
+        Route::get('/projects',  [CustomerPortalController::class, 'projects'])->name('projects');
+        Route::get('/tickets',   [CustomerPortalController::class, 'tickets'])->name('tickets');
+        Route::get('/tickets/{ticket}', [CustomerPortalController::class, 'ticket'])->name('ticket');
+        Route::get('/invoices',  [CustomerPortalController::class, 'invoices'])->name('invoices');
+    });
+});
 
 // ── Öffentliche Umfragen (kein Login erforderlich) ──────────────────────────
 Route::get('/survey/{token}',  [PublicSurveyController::class, 'show'])->name('survey.show');
@@ -65,6 +105,8 @@ Route::middleware('auth.simple')->prefix('admin')->group(function () {
 
     // Projekte
     Route::resource('projects', ProjectController::class);
+    Route::post('/projects/{project}/archive',   [ProjectController::class, 'archive'])->name('projects.archive');
+    Route::post('/projects/{project}/unarchive', [ProjectController::class, 'unarchive'])->name('projects.unarchive');
     Route::get('/projects/{project}/tasks-json', [ProjectController::class, 'tasksJson'])->name('projects.tasks-json');
     Route::post('/projects/{project}/files', [\App\Http\Controllers\ProjectFileController::class, 'store'])->name('project-files.store');
     Route::delete('/project-files/{file}', [\App\Http\Controllers\ProjectFileController::class, 'destroy'])->name('project-files.destroy');
@@ -119,6 +161,23 @@ Route::middleware('auth.simple')->prefix('admin')->group(function () {
     Route::put('/kanban/tasks/{task}',              [KanbanController::class, 'update'])->name('kanban.update');
     Route::delete('/kanban/tasks/{task}',           [KanbanController::class, 'destroy'])->name('kanban.destroy');
 
+    // Aufgaben-Kommentare
+    Route::get('/kanban/tasks/{task}/comments',    [TaskCommentController::class, 'index'])->name('task-comments.index');
+    Route::post('/kanban/tasks/{task}/comments',   [TaskCommentController::class, 'store'])->name('task-comments.store');
+    Route::delete('/task-comments/{comment}',      [TaskCommentController::class, 'destroy'])->name('task-comments.destroy');
+
+    // Meilensteine
+    Route::post('/projects/{project}/milestones',         [MilestoneController::class, 'store'])->name('milestones.store');
+    Route::patch('/milestones/{milestone}/toggle',        [MilestoneController::class, 'toggle'])->name('milestones.toggle');
+    Route::delete('/milestones/{milestone}',              [MilestoneController::class, 'destroy'])->name('milestones.destroy');
+
+    // Globale Suche
+    Route::get('/search', [SearchController::class, 'search'])->name('search');
+
+    // Gantt & Burndown
+    Route::get('/projects/{project}/gantt',    [ProjectController::class, 'gantt'])->name('projects.gantt');
+    Route::get('/projects/{project}/burndown', [ProjectController::class, 'burndown'])->name('projects.burndown');
+
     // Wartungsplan
     Route::get('/projects/{project}/maintenance',                       [MaintenanceController::class, 'index'])->name('maintenance.index');
     Route::post('/projects/{project}/maintenance',                      [MaintenanceController::class, 'store'])->name('maintenance.store');
@@ -145,6 +204,12 @@ Route::middleware('auth.simple')->prefix('admin')->group(function () {
     Route::put('/settings/profile',  [SettingController::class, 'updateProfile'])->name('settings.profile');
     Route::post('/settings/password',[SettingController::class, 'updatePassword'])->name('settings.password');
 
+    // 2FA-Verwaltung (für eingeloggte Nutzer)
+    Route::get('/2fa/setup',              [TwoFactorController::class, 'setup'])->name('2fa.setup');
+    Route::post('/2fa/setup/confirm',     [TwoFactorController::class, 'confirmSetup'])->name('2fa.setup.confirm');
+    Route::post('/2fa/disable',           [TwoFactorController::class, 'disable'])->name('2fa.disable');
+    Route::post('/2fa/backup-codes/regenerate', [TwoFactorController::class, 'regenerateBackupCodes'])->name('2fa.backup-codes.regenerate');
+
     // Helpdesk (Admin)
     Route::get('/helpdesk',                             [HelpdeskController::class, 'index'])->name('helpdesk.index');
     Route::post('/helpdesk',                            [HelpdeskController::class, 'adminStore'])->name('helpdesk.admin-store');
@@ -156,6 +221,17 @@ Route::middleware('auth.simple')->prefix('admin')->group(function () {
 
     // Kunden SLA-Zeiten
     Route::put('/customers/{customer}/sla',             [CustomerController::class, 'updateSla'])->name('customers.sla.update');
+
+    // Kunden-Portal Verwaltung (Admin)
+    Route::post('/customers/{customer}/portal/enable',            [CustomerPortalController::class, 'adminEnablePortal'])->name('customers.portal.enable');
+    Route::post('/customers/{customer}/portal/disable',           [CustomerPortalController::class, 'adminDisablePortal'])->name('customers.portal.disable');
+    Route::post('/customers/{customer}/portal/reset-password',    [CustomerPortalController::class, 'adminResetPortalPassword'])->name('customers.portal.reset-password');
+    Route::post('/customers/{customer}/portal/resend-invitation', [CustomerPortalController::class, 'adminResendInvitation'])->name('customers.portal.resend-invitation');
+
+    // Projekt-Nachrichten (Chat)
+    Route::get('/projects/{project}/messages',      [ProjectMessageController::class, 'index'])->name('project-messages.index');
+    Route::post('/projects/{project}/messages',     [ProjectMessageController::class, 'store'])->name('project-messages.store');
+    Route::delete('/project-messages/{message}',    [ProjectMessageController::class, 'destroy'])->name('project-messages.destroy');
 
     // Bewertungssystem – Fragebögen
     Route::resource('survey-templates', SurveyTemplateController::class);

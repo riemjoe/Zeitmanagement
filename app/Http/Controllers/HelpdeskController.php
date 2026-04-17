@@ -39,6 +39,9 @@ class HelpdeskController extends Controller
                   ->orWhere('customer_email', 'like', "%{$search}%");
             });
         }
+        if ($request->filled('priority')) {
+            $query->where('priority', $request->priority);
+        }
 
         $tickets    = $query->paginate(20)->withQueryString();
         $categories = SupportCategory::orderBy('name')->get();
@@ -56,6 +59,7 @@ class HelpdeskController extends Controller
             'title'               => 'required|string|max:255',
             'description'         => 'required|string',
             'source'              => 'required|string|max:100',
+            'priority'            => 'nullable|in:low,medium,high,urgent',
             'notify_customer'     => 'nullable|boolean',
         ]);
 
@@ -81,6 +85,7 @@ class HelpdeskController extends Controller
             'description'         => $data['description'],
             'source'              => $data['source'],
             'status'              => 'open',
+            'priority'            => $data['priority'] ?? 'medium',
             'sla_deadline'        => $slaDeadline,
         ]);
 
@@ -166,6 +171,7 @@ class HelpdeskController extends Controller
     {
         $data = $request->validate([
             'status'              => 'required|in:open,in_progress,waiting,closed',
+            'priority'            => 'nullable|in:low,medium,high,urgent',
             'support_category_id' => 'nullable|exists:support_categories,id',
             'notify_customer'     => 'nullable|boolean',
         ]);

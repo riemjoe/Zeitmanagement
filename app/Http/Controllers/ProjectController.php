@@ -9,13 +9,29 @@ use Illuminate\Http\Request;
 
 class ProjectController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $showArchived = $request->boolean('archived');
         $projects = Project::with('customer')
             ->withSum('timeEntries', 'hours')
+            ->where('is_archived', $showArchived)
             ->orderByDesc('created_at')
             ->get();
-        return view('projects.index', compact('projects'));
+        return view('projects.index', compact('projects', 'showArchived'));
+    }
+
+    /** Projekt archivieren. */
+    public function archive(Project $project)
+    {
+        $project->update(['is_archived' => true]);
+        return back()->with('success', 'Projekt wurde archiviert.');
+    }
+
+    /** Projekt aus dem Archiv wiederherstellen. */
+    public function unarchive(Project $project)
+    {
+        $project->update(['is_archived' => false]);
+        return back()->with('success', 'Projekt wurde wiederhergestellt.');
     }
 
     public function create()
@@ -57,6 +73,7 @@ class ProjectController extends Controller
             'todos.timeEntries',
             'quote',
             'files',
+            'milestones',
         ]);
         return view('projects.show', compact('project'));
     }
@@ -97,6 +114,81 @@ class ProjectController extends Controller
         }
         $project->delete();
         return redirect()->route('projects.index')->with('success', 'Projekt wurde gelöscht.');
+    }
+
+    /** Gantt-Ansicht für ein Projekt. */
+    public function gantt(Project $project)
+    {
+        $project->load(['tasks.workCategory', 'milestones']);
+        return view('projects.gantt', compact('project'));
+    }
+
+    /** Burndown-Ansicht für ein Projekt. */
+    public function burndown(Project $project)
+    {
+        $project->load(['timeEntries', 'tasks']);
+
+        // Buchungen pro Tag summieren
+        $entries = $project->timeEntries()
+            ->selectRaw('date, SUM(hours) as hours')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        // Kumulierte tatsächliche Stunden
+        $cumulative   = [];
+        $running      = 0;
+        foreach ($entries as $e) {
+            $running += (float) $e->hours;
+            // date kann ein Carbon-Objekt sein → als String verwenden
+            $dateKey = $e->date instanceof \Carbon\Carbon
+                ? $e->date->format('Y-m-d')
+                : (string) $e->date;
+            $cumulative[$dateKey] = $running;
+        }
+
+        // Ideallinie: Budget-Stunden gleichmäßig über Projektlaufzeit
+        $budgetHours = (float) $project->budget_hours;
+        $start       = $project->created_at->toDateString();
+        $end         = $project->deadline?->toDateString() ?? now()->toDateString();
+
+        $chartData = [
+            'labels'      => [],
+            'actual'      => [],
+            'ideal'       => [],
+            'budget'      => $budgetHours,
+        ];
+
+        if ($budgetHours > 0) {
+            $startDate  = new \DateTime($start);
+            $endDate    = new \DateTime($end);
+            $diffDays   = max(1, (int) $startDate->diff($endDate)->days);
+            $dailyIdeal = $budgetHours / $diffDays;
+            $today      = new \DateTime();
+            $limit      = $endDate < $today ? $endDate : $today;
+
+            $day          = clone $startDate;
+            $idealRunning = 0;
+            $lastKnown    = 0;
+
+            while ($day <= $limit) {
+                $dateStr = $day->format('Y-m-d');
+                $chartData['labels'][] = $day->format('d.m.');
+
+                // Kumulierten Wert aus vorberechneter Map holen, letzten bekannten Wert carry-forwarden
+                if (isset($cumulative[$dateStr])) {
+                    $lastKnown = $cumulative[$dateStr];
+                }
+                $chartData['actual'][] = round($lastKnown, 2);
+
+                $idealRunning += $dailyIdeal;
+                $chartData['ideal'][] = round(min($idealRunning, $budgetHours), 2);
+
+                $day->modify('+1 day');
+            }
+        }
+
+        return view('projects.burndown', compact('project', 'chartData'));
     }
 
     /**

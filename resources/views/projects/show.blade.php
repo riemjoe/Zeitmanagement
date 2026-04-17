@@ -6,6 +6,14 @@
        class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg">+ Zeiteintrag</a>
     <a href="{{ route('expenses.create') }}?project_id={{ $project->id }}"
        class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg">+ Ausgabe</a>
+    <a href="{{ route('projects.gantt', $project) }}"
+       class="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg">
+        <i class="ph-bold ph-chart-bar text-sm"></i> Gantt
+    </a>
+    <a href="{{ route('projects.burndown', $project) }}"
+       class="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg">
+        <i class="ph-bold ph-chart-line-down text-sm"></i> Burndown
+    </a>
     <a href="{{ route('maintenance.index', $project) }}"
        class="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors">
         <i class="ph-bold ph-wrench text-sm"></i> Wartungsplan
@@ -527,6 +535,165 @@
     </div>
 </div>
 
+{{-- ── Projekt-Chat ──────────────────────────────────────────────────── --}}
+<div class="bg-white rounded-xl border border-gray-200 mt-6"
+     x-data="projectChat()"
+     x-init="init()">
+
+    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+        <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+            <i class="ph-bold ph-chats text-indigo-500"></i>
+            Projekt-Chat
+            <span class="text-xs font-normal text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full" x-text="messages.length"></span>
+        </h3>
+        <p class="text-xs text-gray-400">Interne Kommunikation – nur für Teammitglieder sichtbar</p>
+    </div>
+
+    <div class="flex flex-col" style="height: 380px;">
+        {{-- Nachrichtenliste --}}
+        <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50" x-ref="chatScroll">
+            <template x-if="loading">
+                <div class="flex justify-center items-center h-full">
+                    <div class="flex items-center gap-2 text-gray-400 text-sm">
+                        <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                        Lade Nachrichten …
+                    </div>
+                </div>
+            </template>
+            <template x-if="!loading && messages.length === 0">
+                <div class="flex flex-col items-center justify-center h-full text-center">
+                    <i class="ph-bold ph-chats text-gray-300 text-5xl mb-3"></i>
+                    <p class="text-sm font-medium text-gray-500">Noch keine Nachrichten</p>
+                    <p class="text-xs text-gray-400 mt-1">Schreiben Sie die erste Nachricht im Projekt-Chat.</p>
+                </div>
+            </template>
+            <template x-for="m in messages" :key="m.id">
+                <div class="flex gap-3 group" :class="m.mine ? 'flex-row-reverse' : ''">
+                    {{-- Avatar --}}
+                    <div class="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-xs font-bold shadow-sm"
+                         :class="m.mine ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-600'"
+                         x-text="m.author_name.charAt(0).toUpperCase()"></div>
+                    {{-- Bubble --}}
+                    <div :class="m.mine ? 'items-end' : 'items-start'" style="display:flex;flex-direction:column;max-width:72%;">
+                        <div class="px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm"
+                             :class="m.mine
+                                ? 'bg-indigo-600 text-white rounded-tr-sm'
+                                : 'bg-white border border-gray-100 text-gray-800 rounded-tl-sm'"
+                             x-text="m.body"></div>
+                        <div class="flex items-center gap-2 mt-1.5 px-1"
+                             :class="m.mine ? 'flex-row-reverse' : ''">
+                            <span class="text-[11px] text-gray-400" x-text="m.author_name + ' · ' + m.created_at"></span>
+                            <button x-show="m.mine" @click="deleteMessage(m.id)"
+                                    class="text-gray-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 text-xs">
+                                <i class="ph-bold ph-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        {{-- Eingabebereich --}}
+        <div class="border-t border-gray-200 bg-white p-3 flex gap-3 items-end">
+            <textarea x-model="newBody"
+                      placeholder="Nachricht schreiben … (Strg+Enter zum Senden)"
+                      @keydown.ctrl.enter.prevent="send()"
+                      @input="$event.target.style.height='auto'; $event.target.style.height=Math.min($event.target.scrollHeight, 100)+'px'"
+                      rows="1"
+                      class="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-50 focus:bg-white transition-colors"
+                      style="max-height:100px;overflow-y:auto;"></textarea>
+            <button @click="send()"
+                    :disabled="!newBody.trim() || sending"
+                    class="p-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl transition-colors shrink-0">
+                <template x-if="sending">
+                    <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                </template>
+                <template x-if="!sending">
+                    <i class="ph-bold ph-paper-plane-tilt text-sm"></i>
+                </template>
+            </button>
+        </div>
+    </div>
+</div>
+
+{{-- ── Meilensteine ─────────────────────────────────────────────────── --}}
+<div class="bg-white rounded-xl border border-gray-200 mt-6"
+     x-data="milestoneList({{ $project->milestones->toJson() }})">
+
+    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
+        <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+            <i class="ph-bold ph-flag text-indigo-400"></i> Meilensteine
+        </h3>
+        <span class="text-sm text-gray-400"
+              x-text="milestones.filter(m => m.is_completed).length + ' / ' + milestones.length + ' erledigt'"></span>
+    </div>
+
+    {{-- Fortschrittsbalken --}}
+    <div class="px-5 pt-3 pb-1" x-show="milestones.length > 0">
+        <div class="w-full bg-gray-100 rounded-full h-1.5">
+            <div class="h-1.5 rounded-full bg-indigo-500 transition-all"
+                 :style="'width:' + (milestones.length ? Math.round(milestones.filter(m=>m.is_completed).length/milestones.length*100) : 0) + '%'"></div>
+        </div>
+    </div>
+
+    {{-- Meilensteinliste --}}
+    <div class="divide-y divide-gray-50">
+        <template x-for="m in milestones" :key="m.id">
+            <div class="px-5 py-3 flex items-start gap-3 group"
+                 :class="m.is_completed ? 'opacity-60' : ''">
+                <button @click="toggle(m)"
+                        class="mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition"
+                        :class="m.is_completed ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-gray-300 hover:border-indigo-400'">
+                    <i class="ph-bold ph-check text-[10px]" x-show="m.is_completed"></i>
+                </button>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-800"
+                       :class="m.is_completed ? 'line-through' : ''"
+                       x-text="m.title"></p>
+                    <div class="flex items-center gap-3 mt-0.5">
+                        <span x-show="m.due_date"
+                              class="text-xs"
+                              :class="m.is_overdue ? 'text-red-500 font-medium' : 'text-gray-400'"
+                              x-text="m.is_overdue ? '⚠ überfällig · ' + m.due_date : m.due_date"></span>
+                        <span x-show="m.description" class="text-xs text-gray-400" x-text="m.description"></span>
+                    </div>
+                </div>
+                <button @click="remove(m.id)"
+                        class="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition text-sm shrink-0">
+                    <i class="ph-bold ph-trash"></i>
+                </button>
+            </div>
+        </template>
+        <div x-show="milestones.length === 0" class="px-5 py-6 text-center text-sm text-gray-400">
+            Noch keine Meilensteine angelegt.
+        </div>
+    </div>
+
+    {{-- Neuer Meilenstein --}}
+    <div class="px-5 py-3 border-t border-gray-100 bg-gray-50/50">
+        <form @submit.prevent="add()" class="flex flex-wrap gap-2 items-end">
+            <div class="flex-1 min-w-40">
+                <input type="text" x-model="newTitle" placeholder="Meilenstein-Titel …" required
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+                <input type="date" x-model="newDate"
+                       class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <button type="submit"
+                    class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg font-medium transition">
+                + Hinzufügen
+            </button>
+        </form>
+    </div>
+</div>
+
 {{-- ── Dateien ─────────────────────────────────────────────────────────── --}}
 <div class="bg-white rounded-xl border border-gray-200 mt-6">
     <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
@@ -658,6 +825,122 @@ function todoList(initialTodos) {
                 });
                 this.todos = this.todos.filter(t => t.id !== todo.id);
             } catch(e) { console.error(e); }
+        },
+    };
+}
+
+function milestoneList(initial) {
+    return {
+        milestones: (initial ?? []).map(m => ({
+            ...m,
+            due_date:     m.due_date     ? new Date(m.due_date).toLocaleDateString('de-DE')     : null,
+            due_date_raw: m.due_date,
+            is_overdue:   m.due_date && !m.is_completed && new Date(m.due_date) < new Date(),
+        })),
+        newTitle: '',
+        newDate:  '',
+
+        async add() {
+            if (!this.newTitle.trim()) return;
+            const csrf = document.querySelector('meta[name="csrf-token"]').content;
+            const res = await fetch(`{{ route('milestones.store', $project) }}`, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+                body: JSON.stringify({ title: this.newTitle, due_date: this.newDate || null }),
+            });
+            if (res.ok) {
+                const m = await res.json();
+                this.milestones.push({ ...m });
+                this.newTitle = '';
+                this.newDate  = '';
+            }
+        },
+
+        async toggle(m) {
+            const csrf = document.querySelector('meta[name="csrf-token"]').content;
+            const res = await fetch(`/admin/milestones/${m.id}/toggle`, {
+                method:  'PATCH',
+                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+            });
+            if (res.ok) {
+                const data = await res.json();
+                m.is_completed = data.is_completed;
+            }
+        },
+
+        async remove(id) {
+            if (!confirm('Meilenstein löschen?')) return;
+            const csrf = document.querySelector('meta[name="csrf-token"]').content;
+            const res = await fetch(`/admin/milestones/${id}`, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+                body: JSON.stringify({ _method: 'DELETE' }),
+            });
+            if (res.ok) this.milestones = this.milestones.filter(m => m.id !== id);
+        },
+    };
+}
+
+function projectChat() {
+    return {
+        messages: [],
+        newBody: '',
+        loading: false,
+        sending: false,
+
+        async init() {
+            await this.load();
+        },
+
+        async load() {
+            this.loading = true;
+            try {
+                const res = await fetch('{{ route('project-messages.index', $project) }}', {
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                });
+                this.messages = await res.json();
+            } finally {
+                this.loading = false;
+                this.$nextTick(() => this.scrollToBottom());
+            }
+        },
+
+        scrollToBottom() {
+            const el = this.$refs.chatScroll;
+            if (el) el.scrollTop = el.scrollHeight;
+        },
+
+        async send() {
+            if (!this.newBody.trim() || this.sending) return;
+            const body = this.newBody;
+            this.newBody = '';
+            this.sending = true;
+            try {
+                const res = await fetch('{{ route('project-messages.store', $project) }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                    body: JSON.stringify({ body }),
+                });
+                if (res.ok) {
+                    const msg = await res.json();
+                    this.messages.push(msg);
+                    this.$nextTick(() => this.scrollToBottom());
+                } else {
+                    this.newBody = body;
+                }
+            } finally {
+                this.sending = false;
+            }
+        },
+
+        async deleteMessage(id) {
+            if (!confirm('Nachricht löschen?')) return;
+            const res = await fetch('/admin/project-messages/' + id, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                body: JSON.stringify({ _method: 'DELETE' }),
+            });
+            if (res.ok) this.messages = this.messages.filter(m => m.id !== id);
         },
     };
 }

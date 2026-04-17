@@ -143,6 +143,143 @@
             </div>
         </div>
 
+        {{-- Kunden-Portal --}}
+        @php $portalUrl = route('portal.login'); @endphp
+        <div x-data="{ showEnableModal: false, showResetModal: false, enableMode: 'invitation' }"
+             class="bg-white rounded-xl border border-gray-200">
+            <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                    <i class="ph-bold ph-door-open text-indigo-500"></i> Kunden-Portal
+                </h3>
+                @if($customer->portal_enabled)
+                <span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">Aktiv</span>
+                @else
+                <span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Deaktiviert</span>
+                @endif
+            </div>
+            <div class="px-5 py-4 space-y-3 text-sm">
+                @if($customer->portal_enabled)
+                <div class="space-y-2">
+                    <p class="text-gray-500">
+                        Der Kunde kann sich unter
+                        <a href="{{ $portalUrl }}" target="_blank" class="text-indigo-600 hover:underline font-medium">{{ $portalUrl }}</a>
+                        mit seiner E-Mail-Adresse anmelden.
+                    </p>
+                    @if($customer->portal_invitation_token && $customer->portal_invitation_expires_at && $customer->portal_invitation_expires_at->isFuture())
+                    <div class="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-3 py-2 text-xs">
+                        <i class="ph-bold ph-envelope-open mr-1"></i>
+                        Einladungslink ausstehend – gültig bis {{ $customer->portal_invitation_expires_at->format('d.m.Y H:i') }}
+                    </div>
+                    @endif
+                    <div class="flex flex-wrap gap-2 pt-1">
+                        <button @click="showResetModal = true"
+                            class="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition">
+                            <i class="ph-bold ph-key mr-1"></i> Passwort zurücksetzen
+                        </button>
+                        @if($customer->email)
+                        <form method="POST" action="{{ route('customers.portal.resend-invitation', $customer) }}">
+                            @csrf
+                            <button type="submit" class="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition">
+                                <i class="ph-bold ph-envelope mr-1"></i> Neuen Einladungslink senden
+                            </button>
+                        </form>
+                        @endif
+                        <form method="POST" action="{{ route('customers.portal.disable', $customer) }}"
+                              onsubmit="return confirm('Portal-Zugang für diesen Kunden deaktivieren?')">
+                            @csrf
+                            <button type="submit" class="text-xs px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition">
+                                <i class="ph-bold ph-prohibit mr-1"></i> Zugang deaktivieren
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                {{-- Passwort zurücksetzen Modal --}}
+                <div x-show="showResetModal" x-cloak
+                     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                     @keydown.escape.window="showResetModal = false">
+                    <div @click.outside="showResetModal = false"
+                         class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+                        <h3 class="font-bold text-gray-900 mb-1">Passwort zurücksetzen</h3>
+                        <p class="text-sm text-gray-500 mb-4">Der Kunde muss beim nächsten Login ein neues Passwort setzen.</p>
+                        <form method="POST" action="{{ route('customers.portal.reset-password', $customer) }}" class="space-y-3">
+                            @csrf
+                            <input type="password" name="password" required minlength="8" placeholder="Neues Passwort (mind. 8 Zeichen)"
+                                class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <div class="flex gap-2">
+                                <button type="submit"
+                                    class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2 rounded-xl">
+                                    Speichern
+                                </button>
+                                <button type="button" @click="showResetModal = false"
+                                    class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm rounded-xl">
+                                    Abbrechen
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                @else
+                <p class="text-gray-500">Der Kunde hat noch keinen Zugang zum Kundenportal.</p>
+                <button @click="showEnableModal = true"
+                    class="text-sm px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition">
+                    <i class="ph-bold ph-door-open mr-1"></i> Portal-Zugang aktivieren
+                </button>
+                @endif
+            </div>
+
+            {{-- Portal aktivieren Modal --}}
+            <div x-show="showEnableModal" x-cloak
+                 class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                 @keydown.escape.window="showEnableModal = false">
+                <div @click.outside="showEnableModal = false"
+                     class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+                    <h3 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <i class="ph-bold ph-door-open text-indigo-500"></i> Portal-Zugang aktivieren
+                    </h3>
+                    <form method="POST" action="{{ route('customers.portal.enable', $customer) }}" class="space-y-4">
+                        @csrf
+                        <div class="space-y-2">
+                            <label class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition"
+                                   :class="enableMode === 'invitation' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'">
+                                <input type="radio" name="mode" value="invitation" x-model="enableMode" class="text-indigo-600">
+                                <div>
+                                    <p class="font-medium text-sm text-gray-800">Einladungslink per E-Mail senden</p>
+                                    <p class="text-xs text-gray-500">Der Kunde erhält einen Link zum Einrichten seines Zugangs (7 Tage gültig).</p>
+                                </div>
+                            </label>
+                            <label class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition"
+                                   :class="enableMode === 'password' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'">
+                                <input type="radio" name="mode" value="password" x-model="enableMode" class="text-indigo-600">
+                                <div>
+                                    <p class="font-medium text-sm text-gray-800">Passwort manuell vergeben</p>
+                                    <p class="text-xs text-gray-500">Der Kunde muss das Passwort beim ersten Login ändern.</p>
+                                </div>
+                            </label>
+                        </div>
+                        <div x-show="enableMode === 'password'" class="space-y-1">
+                            <label class="block text-xs font-medium text-gray-600">Initiales Passwort</label>
+                            <input type="password" name="password" minlength="8"
+                                :required="enableMode === 'password'"
+                                placeholder="Mindestens 8 Zeichen"
+                                class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div class="flex gap-2 pt-1">
+                            <button type="submit"
+                                class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2.5 rounded-xl transition">
+                                Aktivieren
+                            </button>
+                            <button type="button" @click="showEnableModal = false"
+                                class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm rounded-xl transition">
+                                Abbrechen
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
         {{-- SLA-Zeiten --}}
         <div x-data="{ showSlaModal: false }" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
             <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">

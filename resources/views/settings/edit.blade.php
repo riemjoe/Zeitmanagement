@@ -614,6 +614,107 @@
     </div>
 
     {{-- ════════════════════════════════════════════════════════════════════ --}}
+    {{-- 2FA-SEKTION (immer sichtbar, nicht als Tab)                          --}}
+    {{-- ════════════════════════════════════════════════════════════════════ --}}
+    <div class="bg-white rounded-xl border border-gray-200 p-6 mt-6">
+        <h3 class="font-semibold text-gray-700 border-b pb-2 mb-4 flex items-center gap-2">
+            <i class="ph-bold ph-shield-check text-indigo-500"></i> Zwei-Faktor-Authentifizierung (2FA)
+        </h3>
+
+        @if(session('backup_codes'))
+        <div class="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+            <p class="text-sm font-semibold text-amber-800 mb-2">
+                <i class="ph-bold ph-warning"></i> Backup-Codes – jetzt sichern!
+            </p>
+            <p class="text-xs text-amber-700 mb-3">Diese Codes werden nur einmal angezeigt. Bewahre sie sicher auf.</p>
+            <div class="grid grid-cols-3 gap-2">
+                @foreach(session('backup_codes') as $bc)
+                <code class="text-center bg-white border border-amber-200 rounded-lg py-1.5 text-sm font-mono font-bold text-amber-900">{{ $bc }}</code>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
+        @if(auth()->user()->two_factor_enabled)
+        <div class="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl mb-4">
+            <i class="ph-bold ph-check-circle text-green-600 text-xl"></i>
+            <div>
+                <p class="text-sm font-semibold text-green-800">2FA ist aktiviert</p>
+                <p class="text-xs text-green-700">Dein Konto ist mit einem zweiten Faktor gesichert.</p>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+            {{-- Backup-Codes neu generieren --}}
+            <form method="POST" action="{{ route('2fa.backup-codes.regenerate') }}"
+                  x-data="{ open: false }" class="inline">
+                @csrf
+                <button type="button" @click="open = true"
+                        class="flex items-center gap-1.5 px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg text-sm font-medium transition">
+                    <i class="ph-bold ph-arrows-clockwise"></i> Neue Backup-Codes
+                </button>
+                {{-- Passwort-Modal --}}
+                <div x-show="open" x-cloak
+                     class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+                     @keydown.escape.window="open = false">
+                    <div @click.outside="open = false"
+                         class="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm space-y-4">
+                        <h3 class="font-bold text-gray-900">Neue Backup-Codes generieren</h3>
+                        <p class="text-sm text-gray-500">Bestätige mit deinem Passwort. Die alten Codes werden ungültig.</p>
+                        @error('password') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
+                        <input type="password" name="password" required placeholder="Passwort"
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <div class="flex gap-2">
+                            <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-lg text-sm">Generieren</button>
+                            <button type="button" @click="open = false" class="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm">Abbrechen</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            {{-- 2FA deaktivieren --}}
+            <form method="POST" action="{{ route('2fa.disable') }}"
+                  x-data="{ open: false }" class="inline">
+                @csrf
+                <button type="button" @click="open = true"
+                        class="flex items-center gap-1.5 px-4 py-2 border border-red-200 text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition">
+                    <i class="ph-bold ph-shield-slash"></i> 2FA deaktivieren
+                </button>
+                <div x-show="open" x-cloak
+                     class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+                     @keydown.escape.window="open = false">
+                    <div @click.outside="open = false"
+                         class="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm space-y-4">
+                        <h3 class="font-bold text-gray-900 text-red-600">2FA deaktivieren</h3>
+                        <p class="text-sm text-gray-500">Bestätige mit deinem Passwort.</p>
+                        @error('password') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
+                        <input type="password" name="password" required placeholder="Passwort"
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
+                        <div class="flex gap-2">
+                            <button type="submit" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2 rounded-lg text-sm">Deaktivieren</button>
+                            <button type="button" @click="open = false" class="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm">Abbrechen</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        @else
+        <div class="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-xl mb-4">
+            <i class="ph-bold ph-shield-slash text-gray-400 text-xl"></i>
+            <div>
+                <p class="text-sm font-medium text-gray-700">2FA ist deaktiviert</p>
+                <p class="text-xs text-gray-500">Dein Konto wird nur durch E-Mail und Passwort geschützt.</p>
+            </div>
+        </div>
+        <a href="{{ route('2fa.setup') }}"
+           class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition">
+            <i class="ph-bold ph-shield-check"></i> 2FA jetzt einrichten
+        </a>
+        @endif
+    </div>
+
+    {{-- ════════════════════════════════════════════════════════════════════ --}}
     {{-- TAB: KUNDENNACHRICHT-TEMPLATE                                        --}}
     {{-- ════════════════════════════════════════════════════════════════════ --}}
     @if(auth()->user()->isAdmin())

@@ -76,10 +76,19 @@ class AuthController extends Controller
             ])->onlyInput('email');
         }
 
-        if (! Auth::attempt(['email' => $credentials['email'], 'password' => $credentials['password']], $request->boolean('remember'))) {
+        if (! Auth::attempt(['email' => $credentials['email'], 'password' => $credentials['password']], false)) {
             return back()->withErrors([
                 'email' => 'E-Mail oder Passwort ist falsch.',
             ])->onlyInput('email');
+        }
+
+        // ── 2FA prüfen ────────────────────────────────────────────────────
+        $loggedInUser = Auth::user();
+        if ($loggedInUser->two_factor_enabled) {
+            Auth::logout(); // kurz abmelden, bis Code bestätigt
+            $request->session()->put('2fa_user_id', $loggedInUser->id);
+            $request->session()->put('2fa_remember', $request->boolean('remember'));
+            return redirect()->route('2fa.verify');
         }
 
         $request->session()->regenerate();

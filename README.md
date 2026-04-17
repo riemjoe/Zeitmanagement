@@ -107,6 +107,48 @@
 - Beliebige Kategorien mit Farbe anlegen (z.B. Entwicklung, Beratung, Support)
 - Werden bei Zeiteinträgen, Aufgaben und Rechnungen verwendet
 
+### 🏷 Ticket-Prioritäten
+- Priorität je Ticket wählbar: **Niedrig · Mittel · Hoch · Dringend**
+- Farbige Badges in der Ticket-Liste und im Ticket-Detail
+- Filterung der Ticket-Liste nach Priorität
+- Priorität beim Anlegen (Admin-Modal) und beim Bearbeiten eines Tickets setzbar
+
+### 💬 Aufgaben-Kommentare
+- Kommentare direkt im **Kanban-Modal** beim Bearbeiten einer Aufgabe
+- Kommentare werden per AJAX geladen und gespeichert (kein Seiten-Reload)
+- Eigene Kommentare können gelöscht werden, Admins können alle löschen
+- Strg+Enter zum schnellen Absenden
+
+### 📁 Projektarchiv
+- Projekte können **archiviert** werden statt gelöscht zu werden
+- Archivierte Projekte erscheinen nicht im normalen Kanban, bei der Zeiterfassung oder in der Projektliste
+- Eigene Archiv-Ansicht unter Projekte → Archiv
+- Jederzeit **wiederherstellbar**
+
+### 🚩 Meilensteine
+- Meilensteine pro Projekt mit Titel, Fälligkeitsdatum und Beschreibung
+- Abhaken → als erledigt markieren, visueller Fortschrittsbalken
+- Meilensteine erscheinen im **Gantt-Chart** als Rauten
+- AJAX-basiert, kein Seiten-Reload
+
+### 📊 Gantt- & Burndown-Ansicht
+- **Gantt-Chart** pro Projekt: Aufgaben als Balken über Zeitachse (nach `due_date`), Meilensteine als Rauten, Deadline-Linie, Heute-Markierung
+- **Burndown-Chart**: tatsächliche vs. ideale Stunden über Zeit, Budget-Limit-Linie, Kennzahlen (Budget, Verbraucht, Verbleibend, Auslastung %)
+- Erreichbar über Buttons im Projekt-Header
+
+### 🔍 Globale Suche
+- Suchfeld in der Topbar (Desktop): Live-Dropdown mit sofortigen Ergebnissen
+- Durchsucht: Kunden, Projekte, Aufgaben (offene), Tickets und Rechnungen
+- Ergebnisse mit farbigen Icons pro Typ, Highlighting des Suchbegriffs
+- Vollständige Ergebnisseite unter `/admin/search?q=…`
+
+### 🔐 Zwei-Faktor-Authentifizierung (2FA)
+- **TOTP-basiert** (RFC 6238) – kompatibel mit Google Authenticator, Authy, 1Password etc.
+- QR-Code-Scan und manuelle Secret-Eingabe beim Setup
+- **Backup-Codes** (6 Stück) als Notfallzugang, einmalig verwendbar
+- Neue Backup-Codes generieren, 2FA deaktivieren (jeweils mit Passwort-Bestätigung)
+- Login-Flow: nach erfolgreichem Passwort → 2FA-Verifikationsseite
+
 ### 👤 Multi-User & Team
 - Mehrere Teammitglieder mit den Rollen **Admin** und **Mitglied**
 - Admins verwalten Team, Unternehmenseinstellungen, Kategorien und Abrechnung

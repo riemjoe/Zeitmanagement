@@ -32,6 +32,20 @@
                 <span class="px-2 py-0.5 rounded-full text-xs font-medium {{ $statusClasses[$ticket->status] ?? 'bg-gray-100' }}">
                     {{ $ticket->status_label }}
                 </span>
+                @php
+                    $prioBadge = [
+                        'low'    => 'bg-gray-100 text-gray-600',
+                        'medium' => 'bg-blue-100 text-blue-700',
+                        'high'   => 'bg-orange-100 text-orange-700',
+                        'urgent' => 'bg-red-100 text-red-700',
+                    ];
+                    $prioIcon = ['low'=>'ph-arrow-down','medium'=>'ph-minus','high'=>'ph-arrow-up','urgent'=>'ph-fire'];
+                    $prio = $ticket->priority ?? 'medium';
+                @endphp
+                <span class="px-2 py-0.5 rounded-full text-xs font-medium {{ $prioBadge[$prio] ?? 'bg-gray-100 text-gray-600' }} flex items-center gap-1">
+                    <i class="ph-bold {{ $prioIcon[$prio] ?? 'ph-minus' }} text-[10px]"></i>
+                    {{ $ticket->priority_label }}
+                </span>
                 @if ($ticket->is_overdue)
                     <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">SLA überschritten</span>
                 @endif
@@ -245,6 +259,17 @@
                             <option value="in_progress" {{ $ticket->status === 'in_progress' ? 'selected' : '' }}>In Bearbeitung</option>
                             <option value="waiting"     {{ $ticket->status === 'waiting'     ? 'selected' : '' }}>Wartet auf Kunde</option>
                             <option value="closed"      {{ $ticket->status === 'closed'      ? 'selected' : '' }}>Geschlossen</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Priorität</label>
+                        <select name="priority"
+                            class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="low"    {{ ($ticket->priority ?? 'medium') === 'low'    ? 'selected' : '' }}>Niedrig</option>
+                            <option value="medium" {{ ($ticket->priority ?? 'medium') === 'medium' ? 'selected' : '' }}>Mittel</option>
+                            <option value="high"   {{ ($ticket->priority ?? 'medium') === 'high'   ? 'selected' : '' }}>Hoch</option>
+                            <option value="urgent" {{ ($ticket->priority ?? 'medium') === 'urgent' ? 'selected' : '' }}>Dringend</option>
                         </select>
                     </div>
 

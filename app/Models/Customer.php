@@ -9,9 +9,21 @@ class Customer extends Model
 {
     protected $fillable = [
         'customer_number', 'name', 'email', 'contact_person', 'phone',
-        'street', 'zip', 'city', 'country',
-        'notes',
+        'street', 'zip', 'city', 'country', 'notes',
+        'portal_enabled', 'portal_password', 'portal_must_change_password',
+        'portal_invitation_token', 'portal_invitation_expires_at',
+        'portal_2fa_secret', 'portal_2fa_enabled', 'portal_2fa_backup_codes',
     ];
+
+    protected $casts = [
+        'portal_enabled'               => 'boolean',
+        'portal_must_change_password'  => 'boolean',
+        'portal_invitation_expires_at' => 'datetime',
+        'portal_2fa_enabled'           => 'boolean',
+        'portal_2fa_backup_codes'      => 'array',
+    ];
+
+    protected $hidden = ['portal_password', 'portal_2fa_secret', 'portal_invitation_token'];
 
     /**
      * Eindeutige 8-stellige Kundennummer im Format xxxx-xxxx generieren.

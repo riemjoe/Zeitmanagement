@@ -37,7 +37,7 @@ class TimeEntryController extends Controller
 
     public function create(Request $request)
     {
-        $projects   = Project::with('customer')->where('status', 'active')->orderBy('name')->get();
+        $projects   = Project::with('customer')->where('status', 'active')->where('is_archived', false)->orderBy('name')->get();
         $categories = WorkCategory::orderBy('name')->get();
         $preselect  = $request->project_id;
         return view('time-entries.create', compact('projects', 'categories', 'preselect'));

@@ -33,6 +33,11 @@ class Task extends Model
         return $this->belongsTo(\App\Models\WorkCategory::class);
     }
 
+    public function comments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(TaskComment::class)->with('user')->orderBy('created_at');
+    }
+
     public function timeEntries(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(\App\Models\TimeEntry::class);

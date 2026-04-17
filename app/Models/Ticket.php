@@ -11,7 +11,7 @@ class Ticket extends Model
     protected $fillable = [
         'ticket_number', 'customer_id', 'customer_email',
         'support_category_id', 'title', 'description',
-        'source', 'status', 'sla_deadline', 'sla_risk_notified_at',
+        'source', 'status', 'priority', 'sla_deadline', 'sla_risk_notified_at',
         'waiting_reminder_sent_at', 'closed_at',
     ];
 
@@ -35,6 +35,28 @@ class Ticket extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(TicketMessage::class)->orderBy('created_at');
+    }
+
+    public function getPriorityLabelAttribute(): string
+    {
+        return match($this->priority) {
+            'low'    => 'Niedrig',
+            'medium' => 'Mittel',
+            'high'   => 'Hoch',
+            'urgent' => 'Dringend',
+            default  => ucfirst($this->priority ?? 'medium'),
+        };
+    }
+
+    public function getPriorityColorAttribute(): string
+    {
+        return match($this->priority) {
+            'low'    => 'gray',
+            'medium' => 'blue',
+            'high'   => 'orange',
+            'urgent' => 'red',
+            default  => 'blue',
+        };
     }
 
     public function getStatusLabelAttribute(): string

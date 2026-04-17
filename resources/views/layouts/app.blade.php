@@ -288,6 +288,7 @@
         {{-- Navigation --}}
         <nav class="flex-1 p-3 space-y-0.5 overflow-y-auto">
             @php
+                $openTicketCount = \App\Models\Ticket::whereIn('status', ['open', 'in_progress'])->count();
                 $nav = [
                     ['label' => 'Dashboard',       'route' => 'dashboard',            'icon' => 'ph-squares-four'],
                     ['label' => 'Kunden',           'route' => 'customers.index',      'icon' => 'ph-users'],
@@ -299,7 +300,7 @@
                     ['label' => 'Angebote',         'route' => 'quotes.index',            'icon' => 'ph-file-doc'],
                     ['label' => 'Verträge',         'route' => 'contracts.index',         'icon' => 'ph-files'],
                     ['label' => 'Rechnungen',       'route' => 'invoices.index',          'icon' => 'ph-file-text'],
-                    ['label' => 'Helpdesk',         'route' => 'helpdesk.index',       'icon' => 'ph-headset'],
+                    ['label' => 'Helpdesk',         'route' => 'helpdesk.index',       'icon' => 'ph-headset', 'badge' => $openTicketCount],
                     ['label' => 'Bewertungen',       'route' => 'surveys.index',        'icon' => 'ph-star'],
                     ['label' => 'Team',             'route' => 'team.index',           'icon' => 'ph-users-three', 'admin_only' => true],
                     ['label' => 'Einstellungen',    'route' => 'settings.edit',        'icon' => 'ph-gear'],
@@ -334,7 +335,13 @@
                                      ? 'bg-indigo-600 text-white shadow-sm'
                                      : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
                             <i class="{{ $active ? 'ph-fill' : 'ph-bold' }} {{ $item['icon'] }} text-lg shrink-0"></i>
-                            {{ $item['label'] }}
+                            <span class="flex-1">{{ $item['label'] }}</span>
+                            @if(!empty($item['badge']) && $item['badge'] > 0)
+                            <span class="min-w-[20px] h-5 px-1 rounded-full text-[10px] font-bold flex items-center justify-center
+                                         {{ $active ? 'bg-white/30 text-white' : 'bg-red-500 text-white' }}">
+                                {{ $item['badge'] > 99 ? '99+' : $item['badge'] }}
+                            </span>
+                            @endif
                         </a>
                         @endif
                     @endif
@@ -385,8 +392,53 @@
                 @yield('title', 'Dashboard')
             </h2>
 
-            {{-- Spacer --}}
-            <div class="flex-1"></div>
+            {{-- Globale Suche --}}
+            <div class="flex-1 max-w-xs hidden md:block"
+                 x-data="globalSearch()"
+                 @keydown.escape.window="open = false; q = ''; results = []">
+                <div class="relative">
+                    <input type="text" x-model="q" @input.debounce.300ms="search()"
+                           @focus="open = q.length >= 2"
+                           @keydown.enter.prevent="goToResults()"
+                           placeholder="Suchen …"
+                           class="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-gray-50">
+                    <i class="ph-bold ph-magnifying-glass absolute left-2.5 top-2 text-gray-400 text-sm pointer-events-none"></i>
+
+                    {{-- Dropdown --}}
+                    <div x-show="open && results.length > 0" x-cloak
+                         @click.outside="open = false"
+                         class="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-80 overflow-y-auto">
+                        <template x-for="group in results" :key="group.group">
+                            <div>
+                                <p class="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400" x-text="group.group"></p>
+                                <template x-for="item in group.items" :key="item.url">
+                                    <a :href="item.url"
+                                       class="flex items-center gap-2.5 px-3 py-2 hover:bg-indigo-50 transition text-sm">
+                                        <i :class="'ph-bold ' + item.icon + ' text-gray-400'"></i>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="font-medium text-gray-800 truncate" x-text="item.label"></p>
+                                            <p class="text-xs text-gray-400 truncate" x-text="item.sub"></p>
+                                        </div>
+                                    </a>
+                                </template>
+                            </div>
+                        </template>
+                        <div class="border-t border-gray-100 px-3 py-2">
+                            <a :href="'{{ route('search') }}?q=' + encodeURIComponent(q)"
+                               class="text-xs text-indigo-600 hover:underline">
+                                Alle Ergebnisse anzeigen →
+                            </a>
+                        </div>
+                    </div>
+
+                    {{-- Kein Ergebnis --}}
+                    <div x-show="open && q.length >= 2 && results.length === 0 && !loading" x-cloak
+                         @click.outside="open = false"
+                         class="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 px-4 py-3 text-sm text-gray-400">
+                        Keine Ergebnisse gefunden.
+                    </div>
+                </div>
+            </div>
 
             {{-- Live-Timer-Widget --}}
             @php
@@ -821,6 +873,37 @@ function timerWidget(initialRunning, initialElapsed, initialProject, initialCate
                 body: JSON.stringify(body),
             });
             return res.json();
+        },
+    };
+}
+</script>
+
+<script>
+function globalSearch() {
+    return {
+        q:       '',
+        results: [],
+        open:    false,
+        loading: false,
+
+        async search() {
+            if (this.q.length < 2) { this.results = []; this.open = false; return; }
+            this.loading = true;
+            this.open = true;
+            try {
+                const res = await fetch('{{ route('search') }}?q=' + encodeURIComponent(this.q), {
+                    headers: { 'Accept': 'application/json' },
+                });
+                this.results = await res.json();
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        goToResults() {
+            if (this.q.length >= 2) {
+                window.location.href = '{{ route('search') }}?q=' + encodeURIComponent(this.q);
+            }
         },
     };
 }

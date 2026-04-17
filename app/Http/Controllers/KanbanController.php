@@ -39,7 +39,7 @@ class KanbanController extends Controller
             $columns[$status] = $tasks->get($status, collect());
         }
 
-        $projects   = Project::with('customer')->orderBy('name')->get();
+        $projects   = Project::with('customer')->where('is_archived', false)->orderBy('name')->get();
         $members    = User::where('is_active', true)->orderBy('name')->get();
         $categories = WorkCategory::orderBy('name')->get();
 

@@ -11,7 +11,7 @@ class Project extends Model
 {
     protected $fillable = [
         'customer_id', 'name', 'description',
-        'hourly_rate', 'status', 'notes',
+        'hourly_rate', 'status', 'is_archived', 'notes',
         'budget_hours', 'budget_amount', 'deadline', 'quote_id',
     ];
 
@@ -20,6 +20,7 @@ class Project extends Model
         'budget_hours'   => 'decimal:2',
         'budget_amount'  => 'decimal:2',
         'deadline'       => 'date',
+        'is_archived'    => 'boolean',
     ];
 
     public function customer(): BelongsTo
@@ -65,6 +66,18 @@ class Project extends Model
     public function files(): HasMany
     {
         return $this->hasMany(\App\Models\ProjectFile::class)->orderByDesc('created_at');
+    }
+
+    /** Meilensteine des Projekts. */
+    public function milestones(): HasMany
+    {
+        return $this->hasMany(\App\Models\Milestone::class)->orderBy('due_date')->orderBy('id');
+    }
+
+    /** Projekt-Nachrichten (Chat). */
+    public function messages(): HasMany
+    {
+        return $this->hasMany(\App\Models\ProjectMessage::class)->orderBy('created_at');
     }
 
     public function quote(): \Illuminate\Database\Eloquent\Relations\BelongsTo

@@ -51,8 +51,15 @@
                 <option value="{{ $cat->id }}" {{ request('category') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
             @endforeach
         </select>
+        <select name="priority" class="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">Alle Prioritäten</option>
+            <option value="low"    {{ request('priority') === 'low'    ? 'selected' : '' }}>Niedrig</option>
+            <option value="medium" {{ request('priority') === 'medium' ? 'selected' : '' }}>Mittel</option>
+            <option value="high"   {{ request('priority') === 'high'   ? 'selected' : '' }}>Hoch</option>
+            <option value="urgent" {{ request('priority') === 'urgent' ? 'selected' : '' }}>Dringend</option>
+        </select>
         <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition">Filtern</button>
-        @if (request()->hasAny(['search', 'status', 'category']))
+        @if (request()->hasAny(['search', 'status', 'category', 'priority']))
             <a href="{{ route('helpdesk.index') }}" class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm rounded-lg hover:bg-gray-50 text-gray-600 dark:text-gray-300 transition">
                 <i class="ph-bold ph-x"></i> Zurücksetzen
             </a>
@@ -72,6 +79,7 @@
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Ticket-ID</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Titel</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Priorität</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Kategorie</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">E-Mail</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
@@ -90,10 +98,16 @@
                                 'closed'      => 'bg-gray-100 text-gray-500',
                             ];
                             $prioClasses = [
-                                'low'      => 'bg-green-100 text-green-700',
-                                'medium'   => 'bg-blue-100 text-blue-700',
-                                'high'     => 'bg-orange-100 text-orange-700',
-                                'critical' => 'bg-red-100 text-red-700',
+                                'low'    => 'bg-gray-100 text-gray-600',
+                                'medium' => 'bg-blue-100 text-blue-700',
+                                'high'   => 'bg-orange-100 text-orange-700',
+                                'urgent' => 'bg-red-100 text-red-700',
+                            ];
+                            $prioIcons = [
+                                'low'    => 'ph-arrow-down',
+                                'medium' => 'ph-minus',
+                                'high'   => 'ph-arrow-up',
+                                'urgent' => 'ph-fire',
                             ];
                         @endphp
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-750 {{ $ticket->is_overdue ? 'bg-red-50 dark:bg-red-900/10' : '' }}">
@@ -103,9 +117,16 @@
                             <td class="px-4 py-3 text-gray-900 dark:text-white max-w-xs truncate">
                                 {{ $ticket->title }}
                             </td>
+                            <td class="px-4 py-3 hidden sm:table-cell">
+                                @php $prio = $ticket->priority ?? 'medium'; @endphp
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium {{ $prioClasses[$prio] ?? 'bg-gray-100 text-gray-600' }}">
+                                    <i class="ph-bold {{ $prioIcons[$prio] ?? 'ph-minus' }} text-[10px]"></i>
+                                    {{ $ticket->priority_label }}
+                                </span>
+                            </td>
                             <td class="px-4 py-3 hidden md:table-cell">
                                 @if ($ticket->supportCategory)
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium {{ $prioClasses[$ticket->supportCategory->priority] ?? 'bg-gray-100 text-gray-600' }}">
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
                                         {{ $ticket->supportCategory->name }}
                                     </span>
                                 @else
@@ -369,6 +390,19 @@
                                 <option value="Helpdesk">
                             </datalist>
                         </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Priorität
+                        </label>
+                        <select name="priority"
+                            class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="low">Niedrig</option>
+                            <option value="medium" selected>Mittel</option>
+                            <option value="high">Hoch</option>
+                            <option value="urgent">Dringend</option>
+                        </select>
                     </div>
 
                     <div>
