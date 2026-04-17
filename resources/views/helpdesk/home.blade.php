@@ -104,6 +104,26 @@
 
         </div>
 
+        {{-- Kundenportal-Hinweis --}}
+        <div class="mt-6">
+            <a href="{{ route('portal.login') }}"
+               class="group flex items-center justify-between bg-white rounded-2xl border border-gray-200 hover:border-accent px-6 py-4 shadow-sm hover:shadow-md transition-all duration-200">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                         style="background-color: color-mix(in srgb, {{ $accent }} 12%, white);">
+                        <i class="ph-bold ph-door-open text-xl icon-accent"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-900 text-sm">Kundenportal</p>
+                        <p class="text-xs text-gray-500">Projekte, Tickets &amp; Rechnungen auf einen Blick</p>
+                    </div>
+                </div>
+                <div class="inline-flex items-center gap-1.5 text-sm font-semibold text-accent shrink-0">
+                    Anmelden <i class="ph-bold ph-arrow-right text-sm"></i>
+                </div>
+            </a>
+        </div>
+
         {{-- ─── Kontakthinweis ─────────────────────────────────────────────── --}}
         @if(!empty($settings['company_email']) || !empty($settings['company_phone']))
         <div class="mt-10 bg-white rounded-2xl border border-gray-200 p-6 text-center">

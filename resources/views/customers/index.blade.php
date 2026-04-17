@@ -22,7 +22,7 @@
 </div>
 @endif
 
-<div class="bg-white rounded-xl border border-gray-200 overflow-hidden" x-data="{ msgModal: false, msgCustomer: null, msgCustomerId: null }">
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden" x-data="{ msgModal: false, msgCustomer: null, msgCustomerId: null, portalModal: false, portalCustomer: null, portalCustomerId: null, portalMode: 'invitation', portalHasEmail: false }">
     <table class="w-full text-sm">
         <thead class="bg-gray-50 border-b border-gray-200">
             <tr>
@@ -31,6 +31,7 @@
                 <th class="text-left px-5 py-3 font-semibold text-gray-600">Ansprechpartner:in</th>
                 <th class="text-left px-5 py-3 font-semibold text-gray-600">Kontakt</th>
                 <th class="text-center px-5 py-3 font-semibold text-gray-600">Projekte</th>
+                <th class="text-center px-5 py-3 font-semibold text-gray-600">Portal</th>
                 <th class="px-5 py-3"></th>
             </tr>
         </thead>
@@ -56,6 +57,21 @@
                         {{ $customer->projects_count }}
                     </span>
                 </td>
+                <td class="px-5 py-3 text-center">
+                    @if($customer->portal_enabled)
+                        <button
+                            @click="portalModal = 'disable'; portalCustomer = '{{ addslashes($customer->name) }}'; portalCustomerId = {{ $customer->id }}"
+                            class="inline-flex items-center gap-1 text-xs bg-green-50 hover:bg-green-100 text-green-700 px-2.5 py-1 rounded-lg border border-green-200 transition-colors font-medium">
+                            <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Aktiv
+                        </button>
+                    @else
+                        <button
+                            @click="portalModal = 'enable'; portalCustomer = '{{ addslashes($customer->name) }}'; portalCustomerId = {{ $customer->id }}; portalHasEmail = {{ $customer->email ? 'true' : 'false' }}; portalMode = 'invitation'"
+                            class="inline-flex items-center gap-1 text-xs bg-gray-50 hover:bg-gray-100 text-gray-500 px-2.5 py-1 rounded-lg border border-gray-200 transition-colors">
+                            <span class="w-1.5 h-1.5 bg-gray-300 rounded-full"></span> Inaktiv
+                        </button>
+                    @endif
+                </td>
                 <td class="px-5 py-3 text-right space-x-2 whitespace-nowrap">
                     @if($customer->email)
                     <button
@@ -75,13 +91,111 @@
             </tr>
             @empty
             <tr>
-                <td colspan="6" class="px-5 py-10 text-center text-gray-400">
+                <td colspan="7" class="px-5 py-10 text-center text-gray-400">
                     Noch keine Kunden vorhanden. <a href="{{ route('customers.create') }}" class="text-indigo-600 hover:underline">Ersten Kunden anlegen →</a>
                 </td>
             </tr>
             @endforelse
         </tbody>
     </table>
+
+    {{-- ── Portal-Modals ───────────────────────────────────────────────── --}}
+    <template x-teleport="body">
+        {{-- Portal aktivieren --}}
+        <div x-show="portalModal === 'enable'" x-cloak
+             @keydown.escape.window="portalModal = false"
+             class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+             style="background:rgba(0,0,0,.5)">
+            <div @click.stop class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+                <div class="flex items-center justify-between mb-5">
+                    <h2 class="font-bold text-gray-900 flex items-center gap-2">
+                        <i class="ph-bold ph-door-open text-indigo-500"></i>
+                        Portal aktivieren für <span class="text-indigo-600 ml-1" x-text="portalCustomer"></span>
+                    </h2>
+                    <button @click="portalModal = false" class="text-gray-400 hover:text-gray-700 p-1 rounded">
+                        <i class="ph-bold ph-x text-lg"></i>
+                    </button>
+                </div>
+
+                <form method="POST"
+                      :action="'/admin/customers/' + portalCustomerId + '/portal/enable'"
+                      class="space-y-4">
+                    @csrf
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition"
+                               :class="portalMode === 'invitation' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200'">
+                            <input type="radio" name="mode" value="invitation" x-model="portalMode" class="text-indigo-600">
+                            <div>
+                                <p class="font-medium text-sm text-gray-800">Einladungslink per E-Mail</p>
+                                <p class="text-xs text-gray-500">Der Kunde erhält einen Link (7 Tage gültig) zum Einrichten seines Zugangs.</p>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition"
+                               :class="portalMode === 'password' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200'">
+                            <input type="radio" name="mode" value="password" x-model="portalMode" class="text-indigo-600">
+                            <div>
+                                <p class="font-medium text-sm text-gray-800">Passwort manuell vergeben</p>
+                                <p class="text-xs text-gray-500">Der Kunde muss beim ersten Login ein neues Passwort setzen.</p>
+                            </div>
+                        </label>
+                    </div>
+                    <div x-show="portalMode === 'invitation' && !portalHasEmail"
+                         class="bg-amber-50 border border-amber-200 text-amber-700 rounded-xl px-4 py-3 text-sm">
+                        <i class="ph-bold ph-warning mr-1"></i>
+                        Dieser Kunde hat keine E-Mail-Adresse — Einladungslink kann nicht versendet werden.
+                    </div>
+                    <div x-show="portalMode === 'password'" class="space-y-1">
+                        <label class="block text-xs font-medium text-gray-600">Initiales Passwort</label>
+                        <input type="password" name="password" minlength="8"
+                               :required="portalMode === 'password'"
+                               placeholder="Mindestens 8 Zeichen"
+                               class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div class="flex gap-2 pt-1">
+                        <button type="submit"
+                                :disabled="portalMode === 'invitation' && !portalHasEmail"
+                                class="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold py-2.5 rounded-xl transition">
+                            <i class="ph-bold ph-door-open mr-1"></i> Portal aktivieren
+                        </button>
+                        <button type="button" @click="portalModal = false"
+                                class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm rounded-xl transition">
+                            Abbrechen
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {{-- Portal deaktivieren --}}
+        <div x-show="portalModal === 'disable'" x-cloak
+             @keydown.escape.window="portalModal = false"
+             class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+             style="background:rgba(0,0,0,.5)">
+            <div @click.stop class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+                <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <i class="ph-bold ph-prohibit text-red-500 text-xl"></i>
+                </div>
+                <h2 class="font-bold text-gray-900 mb-1">Portal deaktivieren?</h2>
+                <p class="text-sm text-gray-500 mb-5">
+                    Der Zugang für <strong x-text="portalCustomer"></strong> wird gesperrt.
+                </p>
+                <form method="POST"
+                      :action="'/admin/customers/' + portalCustomerId + '/portal/disable'">
+                    @csrf
+                    <div class="flex gap-2">
+                        <button type="submit"
+                                class="flex-1 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold py-2.5 rounded-xl transition">
+                            Deaktivieren
+                        </button>
+                        <button type="button" @click="portalModal = false"
+                                class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm rounded-xl transition">
+                            Abbrechen
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </template>
 
     {{-- ── Nachricht-Modal ─────────────────────────────────────────────── --}}
     <template x-teleport="body">
