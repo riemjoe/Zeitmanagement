@@ -18,6 +18,13 @@ use Illuminate\Support\Facades\Validator;
 
 class ExportImportController extends Controller
 {
+    // ── Kombinierte Ansicht ───────────────────────────────────────────────────
+
+    public function index()
+    {
+        return view('export-import.index');
+    }
+
     // ── Export ────────────────────────────────────────────────────────────────
 
     public function showExport()
@@ -247,7 +254,7 @@ class ExportImportController extends Controller
             }
         });
 
-        return redirect()->route('export-import.import')
+        return redirect()->route('export-import.index')
             ->with('success', 'Import erfolgreich abgeschlossen.');
     }
 

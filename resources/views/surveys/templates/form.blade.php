@@ -189,7 +189,7 @@
                                         </div>
                                         <div>
                                             <label class="block text-gray-500 mb-1">Schritt</label>
-                                            <input type="number" x-model.number="q.settings.step" min="0.01"
+                                            <input type="number" x-model.number="q.settings.step" min="0.01" step="0.01"
                                                    class="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400">
                                         </div>
                                     </div>

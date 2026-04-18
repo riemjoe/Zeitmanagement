@@ -304,8 +304,8 @@
                     ['label' => 'Bewertungen',       'route' => 'surveys.index',        'icon' => 'ph-star'],
                     ['label' => 'Team',             'route' => 'team.index',           'icon' => 'ph-users-three', 'admin_only' => true],
                     ['label' => 'Einstellungen',    'route' => 'settings.edit',        'icon' => 'ph-gear'],
-                    ['label' => 'Export',           'route' => 'export-import.export', 'icon' => 'ph-export'],
-                    ['label' => 'Import',           'route' => 'export-import.import', 'icon' => 'ph-download-simple'],
+                    ['label' => 'Export & Import',  'route' => 'export-import.index',  'icon' => 'ph-arrows-left-right'],
+                    ['label' => 'Tests',            'route' => 'tests.index',          'icon' => 'ph-test-tube', 'admin_only' => true],
                 ];
 
                 $groups = [
@@ -313,7 +313,7 @@
                     'Verwaltung'  => ['customers.index', 'projects.index', 'work-categories.index'],
                     'Erfassung'   => ['time-entries.index', 'kanban.index', 'expenses.index', 'quotes.index', 'contracts.index', 'invoices.index'],
                     'Support'     => ['helpdesk.index', 'surveys.index'],
-                    'System'      => ['team.index', 'settings.edit', 'export-import.export', 'export-import.import'],
+                    'System'      => ['team.index', 'settings.edit', 'export-import.index', 'tests.index'],
                 ];
             @endphp
 

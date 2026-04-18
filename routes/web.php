@@ -32,6 +32,7 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\CustomerPortalController;
 use App\Http\Controllers\ProjectMessageController;
+use App\Http\Controllers\TestController;
 
 // ── Authentifizierung (öffentlich) ──────────────────────────────────────────
 Route::get('/login',  [AuthController::class, 'showLogin'])->name('login');
@@ -257,11 +258,17 @@ Route::middleware('auth.simple')->prefix('admin')->group(function () {
         Route::resource('support-categories', SupportCategoryController::class)
             ->only(['index', 'store', 'update', 'destroy']);
 
-        // Export / Import
-        Route::get('/export',          [ExportImportController::class, 'showExport'])->name('export-import.export');
+        // Export / Import (kombinierte Ansicht)
+        Route::get('/export-import',   [ExportImportController::class, 'index'])->name('export-import.index');
         Route::get('/export/download', [ExportImportController::class, 'export'])->name('export-import.download');
-        Route::get('/import',          [ExportImportController::class, 'showImport'])->name('export-import.import');
         Route::post('/import',         [ExportImportController::class, 'import'])->name('export-import.import.post');
+        // Legacy-Redirects für alte Lesezeichen
+        Route::get('/export',          fn() => redirect()->route('export-import.index'))->name('export-import.export');
+        Route::get('/import',          fn() => redirect()->route('export-import.index'))->name('export-import.import');
+
+        // Test-Suite Dashboard (nur Admin)
+        Route::get('/tests',     [TestController::class, 'index'])->name('tests.index');
+        Route::get('/tests/run', [TestController::class, 'run'])->name('tests.run');
     });
 
 });
