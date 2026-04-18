@@ -33,6 +33,7 @@ use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\CustomerPortalController;
 use App\Http\Controllers\ProjectMessageController;
 use App\Http\Controllers\TestController;
+use App\Http\Controllers\AutomationController;
 
 // ── Authentifizierung (öffentlich) ──────────────────────────────────────────
 Route::get('/login',  [AuthController::class, 'showLogin'])->name('login');
@@ -80,6 +81,10 @@ Route::prefix('portal')->name('portal.')->group(function () {
 Route::get('/survey/{token}',  [PublicSurveyController::class, 'show'])->name('survey.show');
 Route::post('/survey/{token}', [PublicSurveyController::class, 'submit'])->name('survey.submit')
     ->middleware('throttle:20,5');
+
+// ── Automation-Webhooks (öffentlich, Token-gesichert) ────────────────────────
+Route::post('/webhook/{token}', [AutomationController::class, 'webhook'])->name('automations.webhook')
+    ->middleware('throttle:60,1');
 
 // ── Öffentliche Helpdesk-Routen (kein Login erforderlich) ───────────────────
 // Schreib-Routen: max. 10 Anfragen pro 5 Minuten pro IP
@@ -242,6 +247,13 @@ Route::middleware('auth.simple')->prefix('admin')->group(function () {
     Route::get('/surveys/{survey}/responses/{response}', [SurveyController::class, 'showResponse'])->name('surveys.responses.show');
     Route::delete('/surveys/{survey}/responses/{response}', [SurveyController::class, 'destroyResponse'])->name('surveys.responses.destroy');
     Route::resource('surveys', SurveyController::class);
+
+    // Automatisierungen
+    Route::resource('automations', AutomationController::class);
+    Route::patch('/automations/{automation}/toggle',      [AutomationController::class, 'toggle'])->name('automations.toggle');
+    Route::post('/automations/{automation}/test',         [AutomationController::class, 'test'])->name('automations.test');
+    Route::get('/automations/{automation}/export-yaml',   [AutomationController::class, 'exportYaml'])->name('automations.export-yaml');
+    Route::get('/automations/{automation}/logs',          [AutomationController::class, 'logs'])->name('automations.logs');
 
     // Admin-only Routen
     Route::middleware('ensure.admin')->group(function () {
