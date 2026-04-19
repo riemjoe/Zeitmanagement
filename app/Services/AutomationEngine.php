@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Exceptions\AutomationWaitingException;
 use App\Models\Automation;
 use App\Models\AutomationLog;
+use App\Models\AutomationWait;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
@@ -34,7 +36,7 @@ class AutomationEngine
     }
 
     /**
-     * Eine bestimmte Automation ausführen (auch als Trockentest).
+     * Eine bestimmte Automation von Anfang an ausführen (auch als Trockentest).
      */
     public function run(Automation $automation, array $context = [], bool $dryRun = false): AutomationLog
     {
@@ -42,19 +44,79 @@ class AutomationEngine
         $this->variables = [];
         $this->dryRun    = $dryRun;
 
-        $startMs = microtime(true);
-        $status  = 'success';
+        $definition = $automation->getParsedYaml();
+        $steps      = $definition['steps'] ?? [];
+
+        return $this->execute($automation, $context, $steps);
+    }
+
+    /**
+     * Eine pausierte Automation (wait_until) ab den gespeicherten Restschritten fortsetzen.
+     */
+    public function runFromWait(AutomationWait $wait): AutomationLog
+    {
+        $this->logLines  = [];
+        $this->variables = $wait->getAccumulatedVariablesArray();
+        $this->dryRun    = false;
+
+        $this->log("▶ Fortsetzung nach 'Warten bis' (Wait-ID #{$wait->id})");
+
+        $log = $this->execute(
+            $wait->automation,
+            $wait->getTriggerContextArray(),
+            $wait->getRemainingStepsArray(),
+            resuming: true,
+        );
+
+        // Wait-Eintrag löschen – Automation läuft durch oder hat einen neuen Wait angelegt
+        $wait->delete();
+
+        return $log;
+    }
+
+    // ── Interne Ausführungs-Pipeline ─────────────────────────────────────────
+
+    private function execute(
+        Automation $automation,
+        array      $context,
+        array      $steps,
+        bool       $resuming = false,
+    ): AutomationLog {
+        $startMs  = microtime(true);
+        $status   = 'success';
         $errorMsg = null;
 
-        $this->log("▶ Starte Automation: «{$automation->name}»" . ($dryRun ? ' [TEST]' : ''));
-        $this->log("  Trigger: {$automation->trigger_type}");
-        $this->log("  Kontext-Keys: " . implode(', ', array_keys($context)));
+        if (!$resuming) {
+            $this->log("▶ Starte Automation: «{$automation->name}»" . ($this->dryRun ? ' [TEST]' : ''));
+            $this->log("  Trigger: {$automation->trigger_type}");
+            $this->log("  Kontext-Keys: " . implode(', ', array_keys($context)));
+        }
 
         try {
-            $definition = $automation->getParsedYaml();
-            $steps = $definition['steps'] ?? [];
             $this->executeSteps($steps, $context);
             $this->log("✓ Erfolgreich abgeschlossen.");
+        } catch (AutomationWaitingException $waitEx) {
+            // Automation pausiert – Zustand persistieren
+            $status = 'waiting';
+            $this->log("⏸ Warten bis Bedingung erfüllt: {$waitEx->conditionModel}.{$waitEx->conditionField} {$waitEx->conditionOperator} '{$waitEx->conditionValue}'");
+            $this->log("  Nächste Prüfung in {$waitEx->checkIntervalMinutes} Min. · Timeout nach {$waitEx->timeoutMinutes} Min.");
+
+            if (!$this->dryRun) {
+                AutomationWait::create([
+                    'automation_id'         => $automation->id,
+                    'trigger_context'       => json_encode($context),
+                    'accumulated_variables' => json_encode($this->variables),
+                    'remaining_steps'       => json_encode($waitEx->remainingSteps),
+                    'condition_model'       => $waitEx->conditionModel,
+                    'condition_id'          => $waitEx->conditionId,
+                    'condition_field'       => $waitEx->conditionField,
+                    'condition_operator'    => $waitEx->conditionOperator,
+                    'condition_value'       => $waitEx->conditionValue,
+                    'check_interval_minutes'=> $waitEx->checkIntervalMinutes,
+                    'next_check_at'         => now()->addMinutes($waitEx->checkIntervalMinutes),
+                    'expires_at'            => now()->addMinutes($waitEx->timeoutMinutes),
+                ]);
+            }
         } catch (\Throwable $e) {
             $status   = 'error';
             $errorMsg = $e->getMessage();
@@ -73,7 +135,7 @@ class AutomationEngine
             'duration_ms'   => $durationMs,
         ]);
 
-        if (!$dryRun) {
+        if (!$this->dryRun && $status !== 'waiting') {
             $automation->increment('run_count');
             $automation->update(['last_run_at' => now()]);
         }
@@ -83,10 +145,44 @@ class AutomationEngine
 
     // ── Schrittausführung ────────────────────────────────────────────────────
 
+    /**
+     * Führt eine Liste von Schritten sequentiell aus.
+     * Bei wait_until: sammelt die verbleibenden Schritte und wirft AutomationWaitingException.
+     */
     private function executeSteps(array $steps, array $context): void
     {
-        foreach ($steps as $step) {
-            $type = $step['type'] ?? 'action';
+        foreach ($steps as $index => $step) {
+            $type   = $step['type']   ?? 'action';
+            $action = $step['action'] ?? '';
+
+            // wait_until vor dem normalen Dispatching abfangen,
+            // damit wir die verbleibenden Schritte kennen
+            if ($type === 'action' && $action === 'wait_until') {
+                $params   = $this->resolveParams($step['params'] ?? [], $context);
+                $this->log("  → Warten bis: {$params['model']}.{$params['field']} {$params['operator']} '{$params['value']}'");
+
+                if ($this->dryRun) {
+                    $this->log("    [TEST] Bedingungsprüfung übersprungen.");
+                    continue;
+                }
+
+                if (!$this->checkWaitCondition($params)) {
+                    // Bedingung nicht erfüllt → restliche Schritte sichern und pausieren
+                    throw new AutomationWaitingException(
+                        remainingSteps:        array_slice($steps, $index + 1),
+                        conditionModel:        $params['model']    ?? '',
+                        conditionId:           (string)($params['id'] ?? ''),
+                        conditionField:        $params['field']    ?? '',
+                        conditionOperator:     $params['operator'] ?? '=',
+                        conditionValue:        $params['value']    ?? '',
+                        checkIntervalMinutes:  (int)($params['check_interval_minutes'] ?? 5),
+                        timeoutMinutes:        (int)($params['timeout_minutes']        ?? 1440),
+                    );
+                }
+
+                $this->log("    ✓ Bedingung bereits erfüllt – kein Warten nötig.");
+                continue;
+            }
 
             match ($type) {
                 'action'  => $this->executeAction($step, $context),
@@ -143,8 +239,8 @@ class AutomationEngine
     private function executeForeach(array $step, array $context): void
     {
         $collectionKey = $step['collection'] ?? '';
-        $variable      = $step['variable'] ?? 'item';
-        $innerSteps    = $step['steps'] ?? [];
+        $variable      = $step['variable']   ?? 'item';
+        $innerSteps    = $step['steps']       ?? [];
 
         $collection = $this->resolveValue($collectionKey, $context);
 
@@ -188,7 +284,8 @@ class AutomationEngine
     private function actionCreateModel(array $params): void
     {
         $modelName = $params['model'] ?? '';
-        $data      = $params['data'] ?? [];
+        $data      = $params['data']  ?? [];
+        $alias     = $params['as']    ?? null;
 
         $class = "\\App\\Models\\{$modelName}";
         if (!class_exists($class)) {
@@ -198,6 +295,12 @@ class AutomationEngine
 
         $record = $class::create($data);
         $this->log("    ✓ {$modelName} #{$record->id} erstellt.");
+
+        // Felder als Variablen bereitstellen wenn 'as' angegeben
+        if ($alias) {
+            $this->storeRecordAsVariables($record, $alias);
+            $this->log("    ✓ Felder von {$modelName} #{$record->id} als \${{ {$alias}.* }} verfügbar.");
+        }
     }
 
     private function actionUpdateModel(array $params): void
@@ -205,6 +308,7 @@ class AutomationEngine
         $modelName = $params['model'] ?? '';
         $id        = $params['id']    ?? null;
         $data      = $params['data']  ?? [];
+        $alias     = $params['as']    ?? null;
 
         $class = "\\App\\Models\\{$modelName}";
         if (!class_exists($class) || !$id) {
@@ -219,7 +323,14 @@ class AutomationEngine
         }
 
         $record->update($data);
+        $record->refresh(); // aktuelle DB-Werte laden
         $this->log("    ✓ {$modelName} #{$id} aktualisiert.");
+
+        // Aktualisierte Felder als Variablen bereitstellen
+        if ($alias) {
+            $this->storeRecordAsVariables($record, $alias);
+            $this->log("    ✓ Aktualisierte Felder von {$modelName} #{$id} als \${{ {$alias}.* }} verfügbar.");
+        }
     }
 
     private function actionDeleteModel(array $params): void
@@ -317,13 +428,50 @@ class AutomationEngine
             return;
         }
 
-        $count = 0;
-        foreach ($record->toArray() as $field => $value) {
-            $this->variables["{$alias}.{$field}"] = $value;
-            $count++;
+        $count = $this->storeRecordAsVariables($record, $alias);
+        $this->log("    ✓ {$count} Variablen von {$modelName} #{$id} als \${{ {$alias}.* }} geladen.");
+    }
+
+    // ── Warten-bis Hilfsmethode ───────────────────────────────────────────────
+
+    /**
+     * Prüft eine wait_until-Bedingung gegen den aktuellen DB-Zustand.
+     */
+    private function checkWaitCondition(array $params): bool
+    {
+        $modelName = $params['model']    ?? '';
+        $id        = $params['id']       ?? null;
+        $field     = $params['field']    ?? '';
+        $operator  = $params['operator'] ?? '=';
+        $value     = $params['value']    ?? '';
+
+        if (!$modelName || !$id || !$field) {
+            return false;
         }
 
-        $this->log("    ✓ {$count} Variablen von {$modelName} #{$id} als \${{ {$alias}.* }} geladen.");
+        $class = "\\App\\Models\\{$modelName}";
+        if (!class_exists($class)) {
+            return false;
+        }
+
+        $record = $class::find($id);
+        if (!$record) {
+            return false;
+        }
+
+        $actual = $record->$field ?? null;
+
+        return match ($operator) {
+            '=', '==' => $actual == $value,
+            '!='      => $actual != $value,
+            '>'       => (float)$actual >  (float)$value,
+            '<'       => (float)$actual <  (float)$value,
+            '>='      => (float)$actual >= (float)$value,
+            '<='      => (float)$actual <= (float)$value,
+            'contains'     => str_contains((string)$actual, (string)$value),
+            'not_contains' => !str_contains((string)$actual, (string)$value),
+            default        => false,
+        };
     }
 
     // ── Ausdruck-Auswertung ──────────────────────────────────────────────────
@@ -386,6 +534,11 @@ class AutomationEngine
     private function resolveValue(string $key, array $context): mixed
     {
         // Punkt-Notation: "trigger.title" → $context['trigger']['title']
+        // Oder flacher Schlüssel: "task.title" direkt in $context
+        if (array_key_exists($key, $context)) {
+            return $context[$key];
+        }
+
         $parts = explode('.', $key);
         $value = $context;
 
@@ -400,6 +553,22 @@ class AutomationEngine
         }
 
         return $value;
+    }
+
+    // ── Hilfsmethoden ────────────────────────────────────────────────────────
+
+    /**
+     * Speichert alle Felder eines Eloquent-Records als "{alias}.{feld}" Variablen.
+     * Gibt die Anzahl gespeicherter Felder zurück.
+     */
+    private function storeRecordAsVariables($record, string $alias): int
+    {
+        $count = 0;
+        foreach ($record->toArray() as $field => $value) {
+            $this->variables["{$alias}.{$field}"] = $value;
+            $count++;
+        }
+        return $count;
     }
 
     private function log(string $line): void

@@ -45,3 +45,9 @@ Schedule::command('helpdesk:purge-closed')
     ->withoutOverlapping()
     ->runInBackground();
 
+// Pausierte Automationen (wait_until): jede Minute prüfen ob die Bedingung erfüllt ist.
+Schedule::command('automations:check-waits')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->runInBackground();
+

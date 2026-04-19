@@ -54,13 +54,14 @@ class Automation extends Model
 
     public const ACTION_TYPES = [
         'send_email'      => 'E-Mail versenden',
-        'get_variables'   => 'Variablen laden (Get Variables)',
+        'get_variables'   => 'Variablen laden',
         'create_model'    => 'Datensatz erstellen',
         'update_model'    => 'Datensatz ändern',
         'delete_model'    => 'Datensatz löschen',
         'add_message'     => 'Nachricht hinzufügen',
         'call_webhook'    => 'Webhook aufrufen',
         'set_variable'    => 'Variable setzen',
+        'wait_until'      => 'Warten bis …',
     ];
 
     // ── Model-Felder (für Variablen-Panel) ───────────────────────────────────

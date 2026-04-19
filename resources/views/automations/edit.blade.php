@@ -328,16 +328,27 @@
                                         {{-- Model erstellen / ändern --}}
                                         <template x-if="step.action === 'create_model' || step.action === 'update_model' || step.action === 'delete_model'">
                                             <div class="space-y-2">
-                                                <label class="block">
-                                                    <span class="text-xs text-gray-500 dark:text-gray-400">Model</span>
-                                                    <select x-model="step.params.model"
-                                                            class="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-400 outline-none transition">
-                                                        <option value="">— Bitte wählen —</option>
-                                                        @foreach($triggerModels as $key => $label)
-                                                        <option value="{{ $key }}">{{ $label }}</option>
-                                                        @endforeach
-                                                    </select>
-                                                </label>
+                                                <div class="flex gap-2">
+                                                    <label class="block flex-1">
+                                                        <span class="text-xs text-gray-500 dark:text-gray-400">Model</span>
+                                                        <select x-model="step.params.model"
+                                                                class="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-400 outline-none transition">
+                                                            <option value="">— Bitte wählen —</option>
+                                                            @foreach($triggerModels as $key => $label)
+                                                            <option value="{{ $key }}">{{ $label }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </label>
+                                                    {{-- Alias für create/update – macht Felder als {{ alias.* }} verfügbar --}}
+                                                    <template x-if="step.action !== 'delete_model'">
+                                                        <label class="block w-28 shrink-0">
+                                                            <span class="text-xs text-gray-500 dark:text-gray-400">Alias <span class="text-gray-300">(opt.)</span></span>
+                                                            <input x-model="step.params.as"
+                                                                   placeholder="z.B. new_task"
+                                                                   class="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white font-mono focus:ring-2 focus:ring-indigo-400 outline-none transition">
+                                                        </label>
+                                                    </template>
+                                                </div>
                                                 <template x-if="step.action !== 'create_model'">
                                                     <label class="block">
                                                         <span class="text-xs text-gray-500 dark:text-gray-400">ID</span>
@@ -352,6 +363,14 @@
                                                                placeholder='{"title": "@{{ trigger.title }}", "status": "open"}'
                                                                class="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white font-mono focus:ring-2 focus:ring-indigo-400 outline-none transition resize-none"></textarea>
                                                     </label>
+                                                </template>
+                                                <template x-if="step.action !== 'delete_model' && step.params.as">
+                                                    <p class="text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg px-3 py-2">
+                                                        <i class="ph-bold ph-info"></i>
+                                                        Felder des erstellten/geänderten Datensatzes werden als
+                                                        <code class="font-mono">&#123;&#123;&nbsp;<span x-text="step.params.as"></span>.feld&nbsp;&#125;&#125;</code>
+                                                        in nachfolgenden Schritten verfügbar.
+                                                    </p>
                                                 </template>
                                             </div>
                                         </template>
@@ -445,6 +464,95 @@
                                                     Alle Felder werden als
                                                     <code class="font-mono">&#123;&#123;&nbsp;alias.feld&nbsp;&#125;&#125;</code>
                                                     in nachfolgenden Schritten verfügbar.
+                                                </p>
+                                            </div>
+                                        </template>
+
+                                        {{-- Warten bis (wait_until) --}}
+                                        <template x-if="step.action === 'wait_until'">
+                                            <div class="space-y-2">
+                                                {{-- Model + ID --}}
+                                                <div class="flex gap-2">
+                                                    <label class="block flex-1">
+                                                        <span class="text-xs text-gray-500 dark:text-gray-400">Model</span>
+                                                        <select x-model="step.params.model"
+                                                                class="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-400 outline-none transition">
+                                                            <option value="">— Bitte wählen —</option>
+                                                            @foreach($triggerModels as $key => $label)
+                                                            <option value="{{ $key }}">{{ $label }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </label>
+                                                    <label class="block w-32 shrink-0">
+                                                        <span class="text-xs text-gray-500 dark:text-gray-400">ID</span>
+                                                        <input x-model="step.params.id"
+                                                               placeholder="@{{ trigger.id }}"
+                                                               class="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-400 outline-none transition">
+                                                    </label>
+                                                </div>
+
+                                                {{-- Bedingung: Feld Operator Wert --}}
+                                                <div class="grid grid-cols-3 gap-2">
+                                                    <label class="block">
+                                                        <span class="text-xs text-gray-500 dark:text-gray-400">Feld</span>
+                                                        <input x-model="step.params.field"
+                                                               placeholder="status"
+                                                               class="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white font-mono focus:ring-2 focus:ring-indigo-400 outline-none transition">
+                                                    </label>
+                                                    <label class="block">
+                                                        <span class="text-xs text-gray-500 dark:text-gray-400">Operator</span>
+                                                        <select x-model="step.params.operator"
+                                                                class="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-400 outline-none transition">
+                                                            <option value="=">=</option>
+                                                            <option value="!=">≠</option>
+                                                            <option value=">">&gt;</option>
+                                                            <option value="<">&lt;</option>
+                                                            <option value=">=">&gt;=</option>
+                                                            <option value="<=">&lt;=</option>
+                                                            <option value="contains">enthält</option>
+                                                            <option value="not_contains">enthält nicht</option>
+                                                        </select>
+                                                    </label>
+                                                    <label class="block">
+                                                        <span class="text-xs text-gray-500 dark:text-gray-400">Wert</span>
+                                                        <input x-model="step.params.value"
+                                                               placeholder="approved"
+                                                               class="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-400 outline-none transition">
+                                                    </label>
+                                                </div>
+
+                                                {{-- Prüfintervall + Timeout --}}
+                                                <div class="flex gap-2">
+                                                    <label class="block flex-1">
+                                                        <span class="text-xs text-gray-500 dark:text-gray-400">Prüfintervall</span>
+                                                        <select x-model="step.params.check_interval_minutes"
+                                                                class="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-400 outline-none transition">
+                                                            <option value="1">jede Minute</option>
+                                                            <option value="5" selected>alle 5 Min.</option>
+                                                            <option value="15">alle 15 Min.</option>
+                                                            <option value="30">alle 30 Min.</option>
+                                                            <option value="60">stündlich</option>
+                                                        </select>
+                                                    </label>
+                                                    <label class="block flex-1">
+                                                        <span class="text-xs text-gray-500 dark:text-gray-400">Max. Wartezeit (Timeout)</span>
+                                                        <select x-model="step.params.timeout_minutes"
+                                                                class="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-400 outline-none transition">
+                                                            <option value="60">1 Stunde</option>
+                                                            <option value="360">6 Stunden</option>
+                                                            <option value="1440" selected>24 Stunden</option>
+                                                            <option value="2880">2 Tage</option>
+                                                            <option value="10080">7 Tage</option>
+                                                            <option value="43200">30 Tage</option>
+                                                        </select>
+                                                    </label>
+                                                </div>
+
+                                                <p class="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2">
+                                                    <i class="ph-bold ph-clock"></i>
+                                                    Die Automation pausiert hier und wird fortgesetzt, sobald die Bedingung erfüllt ist.
+                                                    Nachfolgende Schritte erhalten alle bisher gesetzten Variablen.
+                                                    <strong>Hinweis:</strong> Nur auf oberster Ebene (nicht in if/foreach).
                                                 </p>
                                             </div>
                                         </template>
@@ -1053,12 +1161,26 @@ function flowDesigner() {
                 }
 
                 const stepAs = step.params && step.params['as'];
+
+                // get_variables: Felder des geladenen Datensatzes
                 if (step.action === 'get_variables' && stepAs && step.params?.model) {
                     const fields = modelFields[step.params.model] || ['id','created_at','updated_at'];
                     groups.push({
-                        label : 'Schritt ' + (idx + 1) + ' \u2013 ' + step.params.model + ' (' + stepAs + '.*)',
+                        label : 'Schritt ' + (idx + 1) + ' \u2013 ' + step.params.model + ' laden (' + stepAs + '.*)',
                         icon  : 'ph-database',
                         color : '#059669',
+                        vars  : fields.map(f => lb + stepAs + '.' + f + rb),
+                    });
+                }
+
+                // create_model / update_model mit Alias: Felder des erstellten/geänderten Datensatzes
+                if ((step.action === 'create_model' || step.action === 'update_model') && stepAs && step.params?.model) {
+                    const fields = modelFields[step.params.model] || ['id','created_at','updated_at'];
+                    const actionLabel = step.action === 'create_model' ? 'erstellt' : 'geändert';
+                    groups.push({
+                        label : 'Schritt ' + (idx + 1) + ' \u2013 ' + step.params.model + ' ' + actionLabel + ' (' + stepAs + '.*)',
+                        icon  : step.action === 'create_model' ? 'ph-plus-circle' : 'ph-pencil-circle',
+                        color : step.action === 'create_model' ? '#7c3aed' : '#b45309',
                         vars  : fields.map(f => lb + stepAs + '.' + f + rb),
                     });
                 }
