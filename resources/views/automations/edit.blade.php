@@ -135,22 +135,45 @@
                         </label>
                     </div>
 
-                    <div x-show="trigger.type === 'webhook'" class="mt-2">
-                        <span class="text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1">Webhook-URL (nach Speichern verfügbar)</span>
-                        @if($automation->exists && $automation->webhook_token)
-                        <div class="flex items-center gap-1">
-                            <code class="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono flex-1 truncate">
-                                {{ url('/webhook/' . $automation->webhook_token) }}
-                            </code>
-                            <button type="button"
-                                onclick="navigator.clipboard.writeText('{{ url('/webhook/' . $automation->webhook_token) }}')"
-                                class="p-1 text-gray-400 hover:text-indigo-600 transition-colors" title="Kopieren">
-                                <i class="ph-bold ph-copy text-sm"></i>
-                            </button>
-                        </div>
-                        @else
-                        <p class="text-xs text-gray-400 italic">Wird nach dem ersten Speichern generiert.</p>
-                        @endif
+                    <div x-show="trigger.type === 'webhook'" class="mt-2 space-y-2">
+                        <label class="block">
+                            <span class="text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1">
+                                Webhook auswählen
+                                <a href="{{ route('webhooks.create') }}" target="_blank"
+                                   class="ml-1.5 text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">
+                                    <i class="ph-bold ph-plus-circle"></i> Neuer Webhook
+                                </a>
+                            </span>
+                            @if($webhooks->isEmpty())
+                            <div class="flex items-center gap-2 p-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-700 dark:text-amber-300">
+                                <i class="ph-bold ph-warning shrink-0"></i>
+                                Noch keine Webhooks vorhanden.
+                                <a href="{{ route('webhooks.create') }}" target="_blank" class="underline font-medium">Jetzt erstellen</a>
+                            </div>
+                            @else
+                            <select name="webhook_id"
+                                    class="mt-0.5 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-400 outline-none transition">
+                                <option value="">— Bitte wählen —</option>
+                                @foreach($webhooks as $wh)
+                                <option value="{{ $wh->id }}"
+                                    {{ old('webhook_id', $automation->webhook_id) == $wh->id ? 'selected' : '' }}>
+                                    {{ $wh->name }}
+                                </option>
+                                @endforeach
+                            </select>
+                            @if($automation->webhook_id && $automation->webhook)
+                            <div class="mt-1.5 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                                <i class="ph-bold ph-link text-[10px]"></i>
+                                <code class="font-mono truncate">{{ $automation->webhook->getUrl() }}</code>
+                                <button type="button"
+                                        onclick="navigator.clipboard.writeText('{{ $automation->webhook->getUrl() }}')"
+                                        class="text-gray-300 hover:text-indigo-500 transition-colors ml-0.5" title="Kopieren">
+                                    <i class="ph-bold ph-copy text-[10px]"></i>
+                                </button>
+                            </div>
+                            @endif
+                            @endif
+                        </label>
                     </div>
 
                     <div x-show="trigger.type === 'scheduled'" class="mt-2">

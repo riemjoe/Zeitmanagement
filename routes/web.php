@@ -255,6 +255,10 @@ Route::middleware('auth.simple')->prefix('admin')->group(function () {
     Route::get('/automations/{automation}/export-yaml',   [AutomationController::class, 'exportYaml'])->name('automations.export-yaml');
     Route::get('/automations/{automation}/logs',          [AutomationController::class, 'logs'])->name('automations.logs');
 
+    // Webhooks
+    Route::resource('webhooks', \App\Http\Controllers\WebhookController::class);
+    Route::post('/webhooks/{webhook}/regenerate-token',   [\App\Http\Controllers\WebhookController::class, 'regenerateToken'])->name('webhooks.regenerate-token');
+
     // Admin-only Routen
     Route::middleware('ensure.admin')->group(function () {
         Route::post('/settings/test-mail', [SettingController::class, 'testMail'])->name('settings.test-mail');

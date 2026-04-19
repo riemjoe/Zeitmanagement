@@ -303,6 +303,7 @@
                     ['label' => 'Helpdesk',         'route' => 'helpdesk.index',       'icon' => 'ph-headset', 'badge' => $openTicketCount],
                     ['label' => 'Bewertungen',       'route' => 'surveys.index',        'icon' => 'ph-star'],
                     ['label' => 'Automatisierungen','route' => 'automations.index',    'icon' => 'ph-lightning'],
+                    ['label' => 'Webhooks',         'route' => 'webhooks.index',        'icon' => 'ph-plugs-connected'],
                     ['label' => 'Team',             'route' => 'team.index',           'icon' => 'ph-users-three', 'admin_only' => true],
                     ['label' => 'Einstellungen',    'route' => 'settings.edit',        'icon' => 'ph-gear'],
                     ['label' => 'Export & Import',  'route' => 'export-import.index',  'icon' => 'ph-arrows-left-right'],
@@ -314,7 +315,7 @@
                     'Verwaltung'  => ['customers.index', 'projects.index', 'work-categories.index'],
                     'Erfassung'   => ['time-entries.index', 'kanban.index', 'expenses.index', 'quotes.index', 'contracts.index', 'invoices.index'],
                     'Support'     => ['helpdesk.index', 'surveys.index'],
-                    'System'      => ['automations.index', 'team.index', 'settings.edit', 'export-import.index', 'tests.index'],
+                    'System'      => ['automations.index', 'webhooks.index', 'team.index', 'settings.edit', 'export-import.index', 'tests.index'],
                 ];
             @endphp
 

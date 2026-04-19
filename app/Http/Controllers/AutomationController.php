@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Automation;
 use App\Models\AutomationLog;
+use App\Models\Webhook;
 use App\Services\AutomationEngine;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -42,6 +43,7 @@ class AutomationController extends Controller
             'modelFields'   => Automation::MODEL_FIELDS,
             'parsedSteps'   => $parsed['steps'] ?? [],
             'parsedTrigger' => $parsed['trigger'] ?? [],
+            'webhooks'      => Webhook::where('is_active', true)->orderBy('name')->get(),
         ]);
     }
 
@@ -51,11 +53,6 @@ class AutomationController extends Controller
 
         // YAML aus dem Flow-Builder zusammensetzen
         $data['yaml'] = $this->buildYamlFromRequest($request, $data);
-
-        // Webhook-Token automatisch erzeugen
-        if ($data['trigger_type'] === 'webhook') {
-            $data['webhook_token'] = Str::random(40);
-        }
 
         $automation = Automation::create($data);
 
@@ -78,6 +75,7 @@ class AutomationController extends Controller
             'modelFields'   => Automation::MODEL_FIELDS,
             'parsedSteps'   => $parsed['steps'] ?? [],
             'parsedTrigger' => $parsed['trigger'] ?? [],
+            'webhooks'      => Webhook::where('is_active', true)->orderBy('name')->get(),
         ]);
     }
 
@@ -85,11 +83,6 @@ class AutomationController extends Controller
     {
         $data = $this->validated($request);
         $data['yaml'] = $this->buildYamlFromRequest($request, $data);
-
-        // Webhook-Token beim ersten Wechsel erzeugen
-        if ($data['trigger_type'] === 'webhook' && !$automation->webhook_token) {
-            $data['webhook_token'] = Str::random(40);
-        }
 
         $automation->update($data);
 
@@ -172,6 +165,44 @@ class AutomationController extends Controller
 
     public function webhook(string $token)
     {
+        // ── Neues System: zentraler Webhook mit n Automationen ─────────────
+        $webhook = Webhook::where('token', $token)
+            ->where('is_active', true)
+            ->first();
+
+        if ($webhook) {
+            // HMAC-Signatur prüfen wenn Secret gesetzt
+            if (!empty($webhook->secret)) {
+                $signature = request()->header('X-Hub-Signature-256', '');
+                $payload   = request()->getContent();
+
+                if (!$webhook->verifySignature($payload, $signature)) {
+                    return response()->json(['error' => 'Invalid signature.'], 403);
+                }
+            }
+
+            $automations = $webhook->automations()
+                ->where('is_active', true)
+                ->where('trigger_type', 'webhook')
+                ->get();
+
+            if ($automations->isEmpty()) {
+                return response()->json(['success' => true, 'message' => 'No active automations.']);
+            }
+
+            $context = request()->all();
+            $engine  = new AutomationEngine();
+            $logs    = [];
+
+            foreach ($automations as $automation) {
+                $log    = $engine->run($automation, $context);
+                $logs[] = ['automation_id' => $automation->id, 'log_id' => $log->id, 'success' => $log->status === 'success'];
+            }
+
+            return response()->json(['success' => true, 'logs' => $logs]);
+        }
+
+        // ── Altes System (Rückwärtskompatibilität): webhook_token auf Automation ─
         $automation = Automation::where('webhook_token', $token)
             ->where('is_active', true)
             ->where('trigger_type', 'webhook')
@@ -182,8 +213,8 @@ class AutomationController extends Controller
         $log     = $engine->run($automation, $context);
 
         return response()->json([
-            'success'  => $log->status === 'success',
-            'log_id'   => $log->id,
+            'success' => $log->status === 'success',
+            'log_id'  => $log->id,
         ]);
     }
 
@@ -197,6 +228,7 @@ class AutomationController extends Controller
             'is_active'     => 'boolean',
             'trigger_type'  => 'required|string',
             'trigger_model' => 'nullable|string',
+            'webhook_id'    => 'nullable|exists:webhooks,id',
         ]);
     }
 

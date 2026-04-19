@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
@@ -10,7 +11,7 @@ class Automation extends Model
 {
     protected $fillable = [
         'name', 'description', 'is_active', 'yaml',
-        'trigger_type', 'trigger_model', 'webhook_token',
+        'trigger_type', 'trigger_model', 'webhook_token', 'webhook_id',
         'last_run_at', 'run_count',
     ];
 
@@ -90,6 +91,11 @@ class Automation extends Model
     public function logs(): HasMany
     {
         return $this->hasMany(AutomationLog::class)->latest();
+    }
+
+    public function webhook(): BelongsTo
+    {
+        return $this->belongsTo(Webhook::class);
     }
 
     // ── Hilfsmethoden ────────────────────────────────────────────────────────
