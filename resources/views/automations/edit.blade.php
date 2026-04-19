@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', $automation->exists ? 'Automation bearbeiten' : 'Neue Automation')
 
-@push('head')
+@push('styles')
 <style>
     .step-card { transition: box-shadow .15s, border-color .15s; }
     .step-card:hover { box-shadow: 0 0 0 2px #6366f1; }
@@ -22,7 +22,6 @@
 {{-- Alpine-Komponente --}}
 <div
     x-data="flowDesigner()"
-    x-init="init()"
     x-cloak
     class="max-w-5xl">
 
@@ -761,6 +760,9 @@
 
 </div>
 
+@endsection
+
+@push('scripts')
 {{-- ═══════════════════════════ Alpine Script ═══════════════════════════ --}}
 <script>
 function flowDesigner() {
@@ -989,8 +991,8 @@ function flowDesigner() {
             const modelFields = @json($modelFields);
             const groups      = [];
 
-            const lb = '\x7B\x7B ';   // "{{ "
-            const rb = ' \x7D\x7D';   // " }}"
+            const lb = '\x7B\x7B ';
+            const rb = ' \x7D\x7D';
 
             // ── Trigger-Gruppe ─────────────────────────────────────────────
             let triggerVars = [];
@@ -1102,5 +1104,9 @@ function flowDesigner() {
         },
     };
 }
+
+// Explizit als globale Variable registrieren, damit Alpine's Ausdrucks-Evaluator
+// sie immer findet – unabhängig von Skript-Lade-Reihenfolge oder strict mode.
+window.flowDesigner = flowDesigner;
 </script>
-@endsection
+@endpush
