@@ -169,6 +169,53 @@
 - Vollständiger Datenexport als JSON-Datei (Kunden, Projekte, Zeiteinträge, Ausgaben, Rechnungen)
 - Import aus zuvor exportierter Datei zur Datenmigration oder Sicherung
 
+### ⚡ Automationen
+
+Trigger-basierte Workflows, die vollautomatisch ablaufen – ohne manuellen Eingriff.
+
+**Flow-Designer**
+- Visueller Schritt-Editor mit Drag & Drop zum Umordnen
+- Drei Schritt-Typen: **Aktion**, **Wenn/Sonst** (if/else mit Bedingungsausdruck), **Für jeden** (foreach über Listen)
+- YAML-Ansicht zum direkten Bearbeiten der Automation-Definition
+- **Test-Ausführung** (Dry Run) mit JSON-Testkontext – alle Schritte werden durchlaufen, aber keine Änderungen gespeichert
+- Vollständiges **Ausführungsprotokoll** (Timestamp, Schritte, Dauer, Fehler) pro Automation
+
+**Trigger-Typen**
+- `Model erstellt / geändert / gelöscht` – Datensatz-Events (Aufgabe, Projekt, Kunde, Rechnung, Ticket …)
+- `Webhook aufgerufen` – externer HTTP-POST löst die Automation aus (via zentralem Webhook, s.u.)
+- `Export erstellt / Import abgeschlossen` – nach Daten-Export bzw. -Import
+- `Budget erreicht / Zeitlimit erreicht / Deadline erreicht` – zeitliche und finanzielle Schwellen
+- `Zeitgesteuert (Cron)` – frei konfigurierbarer Cron-Ausdruck (z.B. täglich um 09:00)
+
+**Aktions-Typen**
+- `E-Mail versenden` – Empfänger, Betreff und Nachrichtentext mit Variablen-Platzhaltern
+- `Datensatz erstellen` – beliebiges Model anlegen; optionaler **Alias** macht alle Felder des neuen Datensatzes als `{{ alias.feld }}` in Folgeschritten verfügbar
+- `Datensatz ändern` – Model per ID aktualisieren; mit Alias ebenfalls als Variablen weiterverwendbar
+- `Datensatz löschen` – Model per ID entfernen
+- `Variablen laden` – bestehenden Datensatz per ID laden und alle Felder als `{{ alias.* }}` bereitstellen
+- `Variable setzen` – freie Variable mit beliebigem Wert oder Template-Ausdruck
+- `Nachricht hinzufügen` – Projektnachricht erstellen
+- `Webhook aufrufen` – ausgehender HTTP-Request (GET/POST/PUT/PATCH) mit JSON-Payload
+- `Warten bis …` – pausiert die Automation bis eine Bedingung erfüllt ist (z.B. Projekt-Status = „genehmigt"), dann Fortsetzung mit allen bisher gesetzten Variablen; konfigurierbares Prüfintervall (1–60 Min.) und Timeout (1 Std. bis 30 Tage)
+
+**Variablen-Panel**
+- Seitliches Panel zeigt alle verfügbaren Variablen gruppiert nach Quelle: Trigger, `get_variables`-Schritte, `create_model`/`update_model` mit Alias, `set_variable`-Schritte
+- Variablen per **Drag & Drop** direkt in Eingabefelder ziehen oder per Klick in die Zwischenablage kopieren
+- Variablen-Syntax: `{{ trigger.title }}`, `{{ new_task.id }}`, `{{ meine_var }}` usw.
+
+### 🔗 Webhooks
+
+Zentrale Verwaltung eingehender HTTP-Endpunkte, die Automationen auslösen.
+
+- **1 Webhook → n Automationen**: Ein Webhook-Endpunkt kann beliebig viele Automationen gleichzeitig starten
+- Jeder Webhook erhält eine eindeutige URL (`POST /webhook/{token}`)
+- **HMAC-Signatur-Validierung** (optional): Secret hinterlegen → eingehende Requests werden anhand des `X-Hub-Signature-256`-Headers geprüft (GitHub-kompatibles Format); ungültige Requests werden mit HTTP 403 abgelehnt
+- Token jederzeit neu generieren (alte URL wird sofort ungültig)
+- Webhooks einzeln aktivieren/deaktivieren
+- Übersicht zeigt: URL, Anzahl verknüpfter Automationen, Secret-Status
+- Im Automation-Editor: Webhook-Trigger wählt aus der Liste vorhandener Webhooks – kein manuelles Token-Management nötig
+- **Rückwärtskompatibilität**: ältere Automationen mit eigenem `webhook_token`-Feld funktionieren weiterhin
+
 ---
 
 ## 🚀 Setup
