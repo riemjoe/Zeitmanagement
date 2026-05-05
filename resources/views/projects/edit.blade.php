@@ -74,6 +74,20 @@
                 <textarea name="notes" rows="2"
                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">{{ old('notes', $project->notes) }}</textarea>
             </div>
+
+            <div class="border-t border-gray-100 pt-4">
+                <p class="text-sm font-medium text-gray-700 mb-2">Stunden- & Umsatzberechnung</p>
+                <label class="flex items-start gap-3 cursor-pointer group">
+                    <input type="hidden" name="show_open_only" value="0">
+                    <input type="checkbox" name="show_open_only" value="1"
+                           {{ old('show_open_only', $project->show_open_only) ? 'checked' : '' }}
+                           class="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                    <span class="text-sm text-gray-700 leading-snug">
+                        <span class="font-medium">Nur offene Zeiteinträge berücksichtigen</span><br>
+                        <span class="text-gray-400">Gesamtstunden und Umsatz in der Projektübersicht und -detailansicht werden nur aus Zeiteinträgen berechnet, die noch keiner Rechnung zugeordnet sind.</span>
+                    </span>
+                </label>
+            </div>
         </div>
 
         <div class="flex gap-3">

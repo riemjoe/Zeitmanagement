@@ -14,6 +14,7 @@ class ProjectController extends Controller
         $showArchived = $request->boolean('archived');
         $projects = Project::with('customer')
             ->withSum('timeEntries', 'hours')
+            ->withSum('openTimeEntries as open_time_entries_sum_hours', 'hours')
             ->where('is_archived', $showArchived)
             ->orderByDesc('created_at')
             ->get();
@@ -44,20 +45,22 @@ class ProjectController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'customer_id'   => 'required|exists:customers,id',
-            'name'          => 'required|string|max:255',
-            'description'   => 'nullable|string',
-            'hourly_rate'   => 'nullable|numeric|min:0',
-            'status'        => 'required|in:active,paused,completed',
-            'notes'         => 'nullable|string',
-            'budget_hours'  => 'nullable|numeric|min:0',
-            'budget_amount' => 'nullable|numeric|min:0',
-            'deadline'      => 'nullable|date',
+            'customer_id'    => 'required|exists:customers,id',
+            'name'           => 'required|string|max:255',
+            'description'    => 'nullable|string',
+            'hourly_rate'    => 'nullable|numeric|min:0',
+            'status'         => 'required|in:active,paused,completed',
+            'notes'          => 'nullable|string',
+            'budget_hours'   => 'nullable|numeric|min:0',
+            'budget_amount'  => 'nullable|numeric|min:0',
+            'deadline'       => 'nullable|date',
+            'show_open_only' => 'boolean',
         ]);
 
-        $data['hourly_rate']   = $data['hourly_rate']   ?: null;
-        $data['budget_hours']  = $data['budget_hours']  ?: null;
-        $data['budget_amount'] = $data['budget_amount'] ?: null;
+        $data['hourly_rate']    = $data['hourly_rate']   ?: null;
+        $data['budget_hours']   = $data['budget_hours']  ?: null;
+        $data['budget_amount']  = $data['budget_amount'] ?: null;
+        $data['show_open_only'] = $request->boolean('show_open_only');
 
         Project::create($data);
         return redirect()->route('projects.index')->with('success', 'Projekt wurde angelegt.');
@@ -88,20 +91,22 @@ class ProjectController extends Controller
     public function update(Request $request, Project $project)
     {
         $data = $request->validate([
-            'customer_id'   => 'required|exists:customers,id',
-            'name'          => 'required|string|max:255',
-            'description'   => 'nullable|string',
-            'hourly_rate'   => 'nullable|numeric|min:0',
-            'status'        => 'required|in:active,paused,completed',
-            'notes'         => 'nullable|string',
-            'budget_hours'  => 'nullable|numeric|min:0',
-            'budget_amount' => 'nullable|numeric|min:0',
-            'deadline'      => 'nullable|date',
+            'customer_id'    => 'required|exists:customers,id',
+            'name'           => 'required|string|max:255',
+            'description'    => 'nullable|string',
+            'hourly_rate'    => 'nullable|numeric|min:0',
+            'status'         => 'required|in:active,paused,completed',
+            'notes'          => 'nullable|string',
+            'budget_hours'   => 'nullable|numeric|min:0',
+            'budget_amount'  => 'nullable|numeric|min:0',
+            'deadline'       => 'nullable|date',
+            'show_open_only' => 'boolean',
         ]);
 
-        $data['hourly_rate']   = $data['hourly_rate']   ?: null;
-        $data['budget_hours']  = $data['budget_hours']  ?: null;
-        $data['budget_amount'] = $data['budget_amount'] ?: null;
+        $data['hourly_rate']    = $data['hourly_rate']   ?: null;
+        $data['budget_hours']   = $data['budget_hours']  ?: null;
+        $data['budget_amount']  = $data['budget_amount'] ?: null;
+        $data['show_open_only'] = $request->boolean('show_open_only');
 
         $project->update($data);
         return redirect()->route('projects.show', $project)->with('success', 'Projekt wurde aktualisiert.');

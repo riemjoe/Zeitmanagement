@@ -13,6 +13,7 @@ class Project extends Model
         'customer_id', 'name', 'description',
         'hourly_rate', 'status', 'is_archived', 'notes',
         'budget_hours', 'budget_amount', 'deadline', 'quote_id',
+        'show_open_only',
     ];
 
     protected $casts = [
@@ -21,6 +22,7 @@ class Project extends Model
         'budget_amount'  => 'decimal:2',
         'deadline'       => 'date',
         'is_archived'    => 'boolean',
+        'show_open_only' => 'boolean',
     ];
 
     public function customer(): BelongsTo
@@ -31,6 +33,12 @@ class Project extends Model
     public function timeEntries(): HasMany
     {
         return $this->hasMany(TimeEntry::class);
+    }
+
+    /** Nur offene (noch keiner Rechnung zugeordnete) Zeiteinträge. */
+    public function openTimeEntries(): HasMany
+    {
+        return $this->hasMany(TimeEntry::class)->whereDoesntHave('invoices');
     }
 
     public function expenses(): HasMany
@@ -95,17 +103,38 @@ class Project extends Model
 
     /**
      * Gesamtstunden des Projekts.
+     * Bei show_open_only=true werden nur Einträge ohne Rechnungszuordnung gezählt.
      */
     public function getTotalHoursAttribute(): float
     {
+        if ($this->show_open_only) {
+            // Wenn die Relation bereits geladen ist (z.B. auf der Detailseite),
+            // Collection filtern – andernfalls direkte DB-Abfrage.
+            if ($this->relationLoaded('timeEntries')) {
+                return (float) $this->timeEntries
+                    ->filter(fn ($e) => $e->invoices->isEmpty())
+                    ->sum('hours');
+            }
+            return (float) $this->openTimeEntries()->sum('hours');
+        }
         return (float) $this->timeEntries()->sum('hours');
     }
 
     /**
      * Gesamtbetrag Arbeitszeit des Projekts.
+     * Bei show_open_only=true werden nur Einträge ohne Rechnungszuordnung berücksichtigt.
      */
     public function getTotalAmountAttribute(): float
     {
+        if ($this->show_open_only) {
+            if ($this->relationLoaded('timeEntries')) {
+                return $this->timeEntries
+                    ->filter(fn ($e) => $e->invoices->isEmpty())
+                    ->sum(fn ($e) => $e->hours * $this->effective_hourly_rate);
+            }
+            return $this->openTimeEntries()->get()
+                ->sum(fn ($e) => $e->hours * $this->effective_hourly_rate);
+        }
         return $this->timeEntries->sum(fn ($e) =>
             $e->hours * $this->effective_hourly_rate
         );

@@ -53,7 +53,15 @@
                 </td>
                 <td class="px-5 py-3 text-gray-600">{{ $project->customer->name }}</td>
                 <td class="px-5 py-3 text-right text-gray-700">
-                    {{ number_format($project->time_entries_sum_hours ?? 0, 1) }} h
+                    @php
+                        $displayHours = $project->show_open_only
+                            ? ($project->open_time_entries_sum_hours ?? 0)
+                            : ($project->time_entries_sum_hours ?? 0);
+                    @endphp
+                    {{ number_format($displayHours, 1) }} h
+                    @if($project->show_open_only)
+                    <span class="text-xs text-indigo-400 ml-0.5" title="Nur offene Einträge">●</span>
+                    @endif
                 </td>
                 <td class="px-5 py-3 text-right text-gray-700">
                     {{ number_format($project->effective_hourly_rate, 2, ',', '.') }} €/h

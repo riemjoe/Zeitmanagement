@@ -73,6 +73,12 @@
             <p class="text-2xl font-bold text-gray-800">{{ number_format($project->total_hours, 2, ',', '.') }} h</p>
             <p class="text-sm text-gray-500">≈ {{ number_format($project->total_amount, 2, ',', '.') }} € netto</p>
             <p class="text-xs text-gray-400">à {{ number_format($project->effective_hourly_rate, 2, ',', '.') }} €/h</p>
+            @if($project->show_open_only)
+            <span class="inline-flex items-center gap-1 mt-1 text-xs bg-indigo-50 text-indigo-600 border border-indigo-200 rounded px-2 py-0.5"
+                  title="Es werden nur Zeiteinträge gezählt, die noch keiner Rechnung zugewiesen sind.">
+                <i class="ph-bold ph-funnel text-xs"></i> Nur offene Einträge
+            </span>
+            @endif
         </div>
     </div>
 
