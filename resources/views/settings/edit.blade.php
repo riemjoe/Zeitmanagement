@@ -67,6 +67,12 @@
             class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all">
             <i class="ph-bold ph-chat-text"></i> Kundennachricht
         </button>
+
+        <button @click="tab = 'mahnungen'" type="button"
+            :class="tab === 'mahnungen' ? 'bg-white shadow text-indigo-600 dark:bg-gray-700' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400'"
+            class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all">
+            <i class="ph-bold ph-warning"></i> Mahnungen
+        </button>
         @endif
 
         <button @click="tab = 'passwort'" type="button"
@@ -749,6 +755,80 @@
                         Template speichern
                     </button>
                 </div>
+            </div>
+        </form>
+    </div>
+    @endif
+
+    {{-- ════════════════════════════════════════════════════════════════════ --}}
+    {{-- TAB: MAHNUNGEN                                                       --}}
+    {{-- ════════════════════════════════════════════════════════════════════ --}}
+    @if(auth()->user()->isAdmin())
+    <div x-show="tab === 'mahnungen'" x-cloak id="mahnungen">
+        <form method="POST" action="{{ route('settings.dunning') }}" class="space-y-6">
+            @csrf @method('PUT')
+
+            <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-800 mb-1">Mahnwesen-Einstellungen</h3>
+                    <p class="text-xs text-gray-400">
+                        Legen Sie fest, wie viele Tage nach dem Versenden einer Zahlungserinnerung
+                        oder Mahnung das neue Zahlungsziel gesetzt wird. Der Scheduler prüft täglich
+                        um 08:00 Uhr, ob offene Rechnungen überfällig sind, und informiert alle Admins.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Neues Zahlungsziel nach Zahlungserinnerung
+                            <span class="text-gray-400 font-normal">(Tage)</span>
+                        </label>
+                        <div class="flex items-center gap-2">
+                            <input type="number" name="dunning_reminder_days"
+                                   value="{{ old('dunning_reminder_days', $settings['dunning_reminder_days'] ?? 7) }}"
+                                   min="1" max="90"
+                                   class="w-28 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <span class="text-sm text-gray-500">Tage ab Versanddatum</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">
+                            Freundliche Erinnerung, bevor die erste Mahnung folgt.
+                        </p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Neues Zahlungsziel nach Mahnung (1–3)
+                            <span class="text-gray-400 font-normal">(Tage)</span>
+                        </label>
+                        <div class="flex items-center gap-2">
+                            <input type="number" name="dunning_notice_days"
+                                   value="{{ old('dunning_notice_days', $settings['dunning_notice_days'] ?? 14) }}"
+                                   min="1" max="90"
+                                   class="w-28 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <span class="text-sm text-gray-500">Tage ab Versanddatum</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">
+                            Gilt für alle drei Mahnstufen (Mahnung 1, 2 und 3).
+                        </p>
+                    </div>
+                </div>
+
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-700 flex gap-2">
+                    <i class="ph-bold ph-info text-base shrink-0 mt-0.5"></i>
+                    <span>
+                        Der Scheduler-Befehl <code class="bg-amber-100 rounded px-1 py-0.5 font-mono text-xs">invoices:check-overdue</code>
+                        läuft täglich um <strong>08:00 Uhr</strong> und sendet einen Digest an alle Admins,
+                        sobald mindestens eine versendete Rechnung überfällig ist.
+                        <a href="{{ route('dunning.index') }}" class="underline ml-1">Zum Mahnwesen →</a>
+                    </span>
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-5 py-2 rounded-lg text-sm">
+                    Mahnungseinstellungen speichern
+                </button>
             </div>
         </form>
     </div>

@@ -143,6 +143,25 @@ class SettingController extends Controller
     }
 
     /**
+     * Mahnwesen-Einstellungen speichern (nur Admin).
+     */
+    public function updateDunning(Request $request)
+    {
+        $data = $request->validate([
+            'dunning_reminder_days' => 'required|integer|min:1|max:90',
+            'dunning_notice_days'   => 'required|integer|min:1|max:90',
+        ]);
+
+        foreach ($data as $key => $value) {
+            Setting::set($key, $value);
+        }
+
+        return redirect()->route('settings.edit')
+            ->with('success', 'Mahnungseinstellungen wurden gespeichert.')
+            ->with('_tab', 'mahnungen');
+    }
+
+    /**
      * Sendet sofort eine Test-Wartungserinnerung an den eingeloggten Admin.
      */
     public function testMail(Request $request)

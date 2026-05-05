@@ -51,3 +51,10 @@ Schedule::command('automations:check-waits')
     ->withoutOverlapping()
     ->runInBackground();
 
+// Mahnwesen: täglich um 08:00 Uhr überfällige Rechnungen prüfen und Admins informieren.
+// Beim ersten Lauf des Schedulers wird der Befehl sofort ausgeführt (runInBackground + dailyAt).
+Schedule::command('invoices:check-overdue')
+    ->dailyAt('08:00')
+    ->withoutOverlapping()
+    ->runInBackground();
+

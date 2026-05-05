@@ -11,14 +11,21 @@ class Invoice extends Model
     protected $fillable = [
         'customer_id', 'invoice_number', 'date', 'due_date',
         'status', 'tax_rate', 'discount', 'notes', 'service_description', 'sender_snapshot',
+        'reminder_sent_at', 'dunning1_sent_at', 'dunning2_sent_at', 'dunning3_sent_at',
+        'dunning_due_date',
     ];
 
     protected $casts = [
-        'date'            => 'date',
-        'due_date'        => 'date',
-        'tax_rate'        => 'decimal:2',
-        'discount'        => 'decimal:2',
-        'sender_snapshot' => 'array',
+        'date'              => 'date',
+        'due_date'          => 'date',
+        'dunning_due_date'  => 'date',
+        'reminder_sent_at'  => 'datetime',
+        'dunning1_sent_at'  => 'datetime',
+        'dunning2_sent_at'  => 'datetime',
+        'dunning3_sent_at'  => 'datetime',
+        'tax_rate'          => 'decimal:2',
+        'discount'          => 'decimal:2',
+        'sender_snapshot'   => 'array',
     ];
 
     public function customer(): BelongsTo
@@ -107,6 +114,66 @@ class Invoice extends Model
                 ];
             })
             ->values();
+    }
+
+    // ── Mahnwesen ─────────────────────────────────────────────────────────────
+
+    /**
+     * Gibt das aktuell gültige Zahlungsziel zurück:
+     * das Mahndatum wenn gesetzt, sonst das ursprüngliche due_date.
+     */
+    public function getCurrentDueDateAttribute(): \Carbon\Carbon
+    {
+        return $this->dunning_due_date ?? $this->due_date;
+    }
+
+    /**
+     * Ist die Rechnung überfällig (verschickt, aber aktuelles Zahlungsziel überschritten)?
+     */
+    public function getIsOverdueAttribute(): bool
+    {
+        return $this->status === 'sent' && $this->current_due_date->isPast();
+    }
+
+    /**
+     * Wie viele Tage ist die Rechnung überfällig? Null wenn nicht überfällig.
+     */
+    public function getDaysOverdueAttribute(): int
+    {
+        if (! $this->is_overdue) return 0;
+        return (int) $this->current_due_date->startOfDay()->diffInDays(now()->startOfDay());
+    }
+
+    /**
+     * Nächster offener Mahnschritt (0 = Zahlungserinnerung, 1–3 = Mahnung 1–3, 4 = alle erledigt).
+     */
+    public function getNextDunningLevelAttribute(): int
+    {
+        if (! $this->reminder_sent_at) return 0;
+        if (! $this->dunning1_sent_at) return 1;
+        if (! $this->dunning2_sent_at) return 2;
+        if (! $this->dunning3_sent_at) return 3;
+        return 4; // alle Mahnstufen ausgeschöpft
+    }
+
+    /**
+     * Scope: Rechnungen, die für das Mahnwesen relevant sind
+     * (status = sent, aktuelles Zahlungsziel überschritten, nicht komplett abgemahnt).
+     */
+    public function scopeOverdue($query)
+    {
+        return $query->where('status', 'sent')
+            ->where(function ($q) {
+                // Original-Zahlungsziel überschritten (kein Mahndatum gesetzt)
+                $q->whereNull('dunning_due_date')
+                  ->whereDate('due_date', '<', now()->toDateString());
+            })
+            ->orWhere(function ($q) {
+                // Mahndatum gesetzt und dieses ist ebenfalls überschritten
+                $q->where('status', 'sent')
+                  ->whereNotNull('dunning_due_date')
+                  ->whereDate('dunning_due_date', '<', now()->toDateString());
+            });
     }
 
     /**

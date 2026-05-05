@@ -34,6 +34,7 @@ use App\Http\Controllers\CustomerPortalController;
 use App\Http\Controllers\ProjectMessageController;
 use App\Http\Controllers\TestController;
 use App\Http\Controllers\AutomationController;
+use App\Http\Controllers\DunningController;
 
 // ── Authentifizierung (öffentlich) ──────────────────────────────────────────
 Route::get('/login',  [AuthController::class, 'showLogin'])->name('login');
@@ -255,6 +256,11 @@ Route::middleware('auth.simple')->prefix('admin')->group(function () {
     Route::get('/automations/{automation}/export-yaml',   [AutomationController::class, 'exportYaml'])->name('automations.export-yaml');
     Route::get('/automations/{automation}/logs',          [AutomationController::class, 'logs'])->name('automations.logs');
 
+    // Mahnwesen
+    Route::get('/dunning',                              [DunningController::class, 'index'])->name('dunning.index');
+    Route::post('/dunning/{invoice}/reminder',          [DunningController::class, 'sendReminder'])->name('dunning.reminder');
+    Route::post('/dunning/{invoice}/notice',            [DunningController::class, 'sendDunning'])->name('dunning.notice');
+
     // Webhooks
     Route::resource('webhooks', \App\Http\Controllers\WebhookController::class);
     Route::post('/webhooks/{webhook}/regenerate-token',   [\App\Http\Controllers\WebhookController::class, 'regenerateToken'])->name('webhooks.regenerate-token');
@@ -264,6 +270,7 @@ Route::middleware('auth.simple')->prefix('admin')->group(function () {
         Route::post('/settings/test-mail', [SettingController::class, 'testMail'])->name('settings.test-mail');
         Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
         Route::put('/settings/customer-message', [SettingController::class, 'updateCustomerMessageTemplate'])->name('settings.customer-message');
+        Route::put('/settings/dunning', [SettingController::class, 'updateDunning'])->name('settings.dunning');
 
         // Team-Verwaltung
         Route::resource('team', TeamController::class)
