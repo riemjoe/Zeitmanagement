@@ -2,11 +2,11 @@
 @section('title', 'Rechnung ' . $invoice->invoice_number)
 
 @section('header-actions')
-    <button onclick="window.print()"
-            class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg no-print">🖨 Drucken</button>
-    @if($invoice->service_description)
-    <a href="{{ route('invoices.leistungsbeschreibung', $invoice) }}" target="_blank"
-       class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg no-print">📄 Leistungsbeschreibung</a>
+    <a href="{{ route('invoices.pdf', $invoice) }}"
+       class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg">⬇ Rechnung PDF</a>
+    @if($invoice->timeEntries->isNotEmpty() || $invoice->service_description)
+    <a href="{{ route('invoices.leistungsbericht-pdf', $invoice) }}"
+       class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg">⬇ Leistungsbericht PDF</a>
     @endif
     @if($invoice->status !== 'paid')
     <a href="{{ route('invoices.edit', $invoice) }}"

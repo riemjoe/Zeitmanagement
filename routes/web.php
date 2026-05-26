@@ -136,6 +136,10 @@ Route::middleware('auth.simple')->prefix('admin')->group(function () {
         ->name('invoices.billable-items');
     Route::get('/invoices/{invoice}/leistungsbeschreibung', [InvoiceController::class, 'leistungsbeschreibung'])
         ->name('invoices.leistungsbeschreibung');
+    Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])
+        ->name('invoices.pdf');
+    Route::get('/invoices/{invoice}/leistungsbericht-pdf', [InvoiceController::class, 'downloadLeistungsberichtPdf'])
+        ->name('invoices.leistungsbericht-pdf');
     Route::resource('invoices', InvoiceController::class);
 
     // Angebote
