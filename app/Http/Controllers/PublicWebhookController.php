@@ -4,55 +4,26 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Project;
-use App\Models\Setting;
 use App\Models\Ticket;
+use App\Models\WebhookToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 /**
  * Öffentliche API-Webhook-Endpunkte für die Erstellung von Tickets, Kunden und Projekten.
  *
- * Authentifizierung über Bearer-Token (Authorization: Bearer <token>)
- * oder Query-Parameter (?token=<token>).
- * Token wird unter "webhook_token" in den Einstellungen gespeichert.
+ * Authentifizierung über Bearer-Token (Authorization: Bearer <token>) oder ?token=.
+ * Token wird in der webhook_tokens-Tabelle verwaltet mit je konfigurierten Endpunkt-Rechten.
  *
- * POST /api/webhooks/tickets    → Ticket erstellen
- * POST /api/webhooks/customers  → Kunden erstellen
- * POST /api/webhooks/projects   → Projekt erstellen
+ * POST /api/webhooks/tickets    → Ticket erstellen   (Permission: webhooks.tickets)
+ * POST /api/webhooks/customers  → Kunden erstellen   (Permission: webhooks.customers)
+ * POST /api/webhooks/projects   → Projekt erstellen  (Permission: webhooks.projects)
  */
 class PublicWebhookController extends Controller
 {
-    // ── Token-Authentifizierung ──────────────────────────────────────────────
-
-    private function authenticate(Request $request): bool
+    private function unauthorized(string $reason = 'Ungültiger oder fehlender Token.'): JsonResponse
     {
-        $token = Setting::get('webhook_token');
-
-        if (empty($token)) {
-            return false;
-        }
-
-        $authHeader = $request->header('Authorization', '');
-        if (Str::startsWith($authHeader, 'Bearer ')) {
-            $provided = Str::after($authHeader, 'Bearer ');
-            if (hash_equals($token, $provided)) {
-                return true;
-            }
-        }
-
-        if (hash_equals($token, (string) $request->query('token', ''))) {
-            return true;
-        }
-
-        return false;
-    }
-
-    private function unauthorized(): JsonResponse
-    {
-        return response()->json([
-            'error' => 'Unauthorized. Bitte gültigen Token im Authorization-Header (Bearer) oder als ?token= übergeben.',
-        ], 401);
+        return response()->json(['error' => "Unauthorized. {$reason}"], 401);
     }
 
     // ── Endpoints ────────────────────────────────────────────────────────────
@@ -60,8 +31,8 @@ class PublicWebhookController extends Controller
     /** POST /api/webhooks/tickets */
     public function createTicket(Request $request): JsonResponse
     {
-        if (!$this->authenticate($request)) {
-            return $this->unauthorized();
+        if (!WebhookToken::authenticate($request, 'webhooks.tickets')) {
+            return $this->unauthorized('Kein Zugriff auf Endpoint "webhooks.tickets".');
         }
 
         $data = $request->validate([
@@ -108,8 +79,8 @@ class PublicWebhookController extends Controller
     /** POST /api/webhooks/customers */
     public function createCustomer(Request $request): JsonResponse
     {
-        if (!$this->authenticate($request)) {
-            return $this->unauthorized();
+        if (!WebhookToken::authenticate($request, 'webhooks.customers')) {
+            return $this->unauthorized('Kein Zugriff auf Endpoint "webhooks.customers".');
         }
 
         $data = $request->validate([
@@ -139,8 +110,8 @@ class PublicWebhookController extends Controller
     /** POST /api/webhooks/projects */
     public function createProject(Request $request): JsonResponse
     {
-        if (!$this->authenticate($request)) {
-            return $this->unauthorized();
+        if (!WebhookToken::authenticate($request, 'webhooks.projects')) {
+            return $this->unauthorized('Kein Zugriff auf Endpoint "webhooks.projects".');
         }
 
         $data = $request->validate([
@@ -164,25 +135,5 @@ class PublicWebhookController extends Controller
             'id'      => $project->id,
             'name'    => $project->name,
         ], 201);
-    }
-
-    // ── Token-Verwaltung (intern) ────────────────────────────────────────────
-
-    public static function ensureToken(): string
-    {
-        $token = Setting::get('webhook_token');
-        if (empty($token)) {
-            $token = Str::random(48);
-            Setting::set('webhook_token', $token);
-        }
-        return $token;
-    }
-
-    public function regenerateToken(): \Illuminate\Http\RedirectResponse
-    {
-        $token = Str::random(48);
-        Setting::set('webhook_token', $token);
-
-        return back()->with('success', 'Webhook-Token wurde neu generiert. Bitte alle externen Systeme aktualisieren.');
     }
 }

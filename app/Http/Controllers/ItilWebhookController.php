@@ -5,73 +5,32 @@ namespace App\Http\Controllers;
 use App\Models\Incident;
 use App\Models\ItilChange;
 use App\Models\Problem;
-use App\Models\Setting;
+use App\Models\WebhookToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 /**
- * Dedizierter öffentlicher Webhook-Endpunkt zum Erstellen von ITIL-Objekten.
+ * Öffentliche Webhook-Endpunkte für ITIL-Objekte.
  *
- * Authentifizierung über Bearer-Token oder Query-Parameter "token".
- * Token ist in den Einstellungen unter "itil_webhook_token" gespeichert.
+ * Authentifizierung über Bearer-Token (webhook_tokens-Tabelle) mit Endpoint-Permission-Check.
  *
- * POST /api/itil/incidents   → Incident erstellen
- * POST /api/itil/problems    → Problem erstellen
- * POST /api/itil/changes     → Change erstellen
- *
- * Payload-Beispiel (Incident):
- * {
- *   "title": "Server nicht erreichbar",
- *   "description": "Produktion ausgefallen",
- *   "priority": "critical",
- *   "impact": "high",
- *   "urgency": "high",
- *   "category": "Infrastructure",
- *   "affected_service": "API Gateway",
- *   "reported_by": "monitoring@example.com"
- * }
+ * POST /api/itil/incidents  → Incident erstellen  (Permission: itil.incidents)
+ * POST /api/itil/problems   → Problem erstellen   (Permission: itil.problems)
+ * POST /api/itil/changes    → Change erstellen    (Permission: itil.changes)
  */
 class ItilWebhookController extends Controller
 {
-    // ── Token-Authentifizierung ───────────────────────────────────────────────
-
-    private function authenticate(Request $request): bool
+    private function unauthorized(string $endpoint): JsonResponse
     {
-        $token = Setting::get('itil_webhook_token');
-
-        if (empty($token)) {
-            return false;
-        }
-
-        // Bearer-Token aus Authorization-Header
-        $authHeader = $request->header('Authorization', '');
-        if (Str::startsWith($authHeader, 'Bearer ')) {
-            $provided = Str::after($authHeader, 'Bearer ');
-            if (hash_equals($token, $provided)) {
-                return true;
-            }
-        }
-
-        // Query-Parameter ?token=…
-        if (hash_equals($token, (string) $request->query('token', ''))) {
-            return true;
-        }
-
-        return false;
-    }
-
-    private function unauthorized(): JsonResponse
-    {
-        return response()->json(['error' => 'Unauthorized. Bitte gültigen Token im Authorization-Header oder als ?token= übergeben.'], 401);
+        return response()->json(['error' => "Unauthorized. Kein Zugriff auf Endpoint \"{$endpoint}\"."], 401);
     }
 
     // ── Endpoints ─────────────────────────────────────────────────────────────
 
     public function createIncident(Request $request): JsonResponse
     {
-        if (!$this->authenticate($request)) {
-            return $this->unauthorized();
+        if (!WebhookToken::authenticate($request, 'itil.incidents')) {
+            return $this->unauthorized('itil.incidents');
         }
 
         $data = $request->validate([
@@ -109,8 +68,8 @@ class ItilWebhookController extends Controller
 
     public function createProblem(Request $request): JsonResponse
     {
-        if (!$this->authenticate($request)) {
-            return $this->unauthorized();
+        if (!WebhookToken::authenticate($request, 'itil.problems')) {
+            return $this->unauthorized('itil.problems');
         }
 
         $data = $request->validate([
@@ -141,8 +100,8 @@ class ItilWebhookController extends Controller
 
     public function createChange(Request $request): JsonResponse
     {
-        if (!$this->authenticate($request)) {
-            return $this->unauthorized();
+        if (!WebhookToken::authenticate($request, 'itil.changes')) {
+            return $this->unauthorized('itil.changes');
         }
 
         $data = $request->validate([
@@ -174,16 +133,4 @@ class ItilWebhookController extends Controller
         ], 201);
     }
 
-    /**
-     * Aktuellen Webhook-Token anzeigen und neu generieren (authenticated, intern).
-     */
-    public static function ensureToken(): string
-    {
-        $token = Setting::get('itil_webhook_token');
-        if (empty($token)) {
-            $token = Str::random(48);
-            Setting::set('itil_webhook_token', $token);
-        }
-        return $token;
-    }
 }

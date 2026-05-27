@@ -40,7 +40,7 @@ use App\Http\Controllers\ProblemController;
 use App\Http\Controllers\ItilChangeController;
 use App\Http\Controllers\ItilWebhookController;
 use App\Http\Controllers\PublicWebhookController;
-use App\Http\Controllers\WebhookLibraryController;
+use App\Http\Controllers\WebhookController;
 
 // ── Authentifizierung (öffentlich) ──────────────────────────────────────────
 Route::get('/login',  [AuthController::class, 'showLogin'])->name('login');
@@ -281,9 +281,14 @@ Route::middleware('auth.simple')->prefix('admin')->group(function () {
     Route::get('/automations/{automation}/export-yaml',   [AutomationController::class, 'exportYaml'])->name('automations.export-yaml');
     Route::get('/automations/{automation}/logs',          [AutomationController::class, 'logs'])->name('automations.logs');
 
-    // ── Webhook-Bibliothek ────────────────────────────────────────────────────
-    Route::get('/webhooks/library',                [WebhookLibraryController::class, 'index'])->name('webhooks.library');
-    Route::post('/webhooks/library/regenerate-token', [PublicWebhookController::class, 'regenerateToken'])->name('webhooks.library.regenerate-token');
+    // ── API-Token-Verwaltung (vor resource registrieren für korrekte Priorität) ─
+    Route::post('/webhooks/tokens',                          [WebhookController::class, 'storeToken'])->name('webhooks.tokens.store');
+    Route::delete('/webhooks/tokens/{webhookToken}',         [WebhookController::class, 'destroyToken'])->name('webhooks.tokens.destroy');
+    Route::patch('/webhooks/tokens/{webhookToken}/toggle',   [WebhookController::class, 'toggleToken'])->name('webhooks.tokens.toggle');
+
+    // ── Webhooks (Automation-Webhooks + Hub) ─────────────────────────────────
+    Route::resource('webhooks', WebhookController::class);
+    Route::post('/webhooks/{webhook}/regenerate-token', [WebhookController::class, 'regenerateToken'])->name('webhooks.regenerate-token');
 
     // Mahnwesen
     Route::get('/dunning',                              [DunningController::class, 'index'])->name('dunning.index');
