@@ -5,11 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+// Project wird über die Relation aufgelöst (kein direkter Import nötig, da gleicher Namespace)
 
 class Ticket extends Model
 {
     protected $fillable = [
-        'ticket_number', 'customer_id', 'customer_email',
+        'ticket_number', 'customer_id', 'project_id', 'customer_email',
         'support_category_id', 'title', 'description',
         'source', 'status', 'priority', 'sla_deadline', 'sla_risk_notified_at',
         'waiting_reminder_sent_at', 'closed_at',
@@ -25,6 +26,11 @@ class Ticket extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
     }
 
     public function supportCategory(): BelongsTo

@@ -39,6 +39,8 @@ use App\Http\Controllers\IncidentController;
 use App\Http\Controllers\ProblemController;
 use App\Http\Controllers\ItilChangeController;
 use App\Http\Controllers\ItilWebhookController;
+use App\Http\Controllers\PublicWebhookController;
+use App\Http\Controllers\WebhookLibraryController;
 
 // ── Authentifizierung (öffentlich) ──────────────────────────────────────────
 Route::get('/login',  [AuthController::class, 'showLogin'])->name('login');
@@ -96,6 +98,13 @@ Route::prefix('api/itil')->name('itil.api.')->middleware('throttle:60,1')->group
     Route::post('/incidents', [ItilWebhookController::class, 'createIncident'])->name('incidents');
     Route::post('/problems',  [ItilWebhookController::class, 'createProblem'])->name('problems');
     Route::post('/changes',   [ItilWebhookController::class, 'createChange'])->name('changes');
+});
+
+// ── Öffentliche Webhooks (Ticket, Kunde, Projekt – Bearer-Token-gesichert) ───
+Route::prefix('api/webhooks')->name('api.webhooks.')->middleware('throttle:60,1')->group(function () {
+    Route::post('/tickets',   [PublicWebhookController::class, 'createTicket'])->name('tickets');
+    Route::post('/customers', [PublicWebhookController::class, 'createCustomer'])->name('customers');
+    Route::post('/projects',  [PublicWebhookController::class, 'createProject'])->name('projects');
 });
 
 // ── Öffentliche Helpdesk-Routen (kein Login erforderlich) ───────────────────
@@ -239,6 +248,7 @@ Route::middleware('auth.simple')->prefix('admin')->group(function () {
     Route::post('/helpdesk/{ticket}/reply',             [HelpdeskController::class, 'reply'])->name('helpdesk.reply');
     Route::patch('/helpdesk/{ticket}/status',           [HelpdeskController::class, 'updateStatus'])->name('helpdesk.status');
     Route::post('/helpdesk/{ticket}/create-task',       [HelpdeskController::class, 'createTask'])->name('helpdesk.create-task');
+    Route::patch('/helpdesk/{ticket}/assign',           [HelpdeskController::class, 'assign'])->name('helpdesk.assign');
     Route::delete('/helpdesk/{ticket}',                 [HelpdeskController::class, 'destroy'])->name('helpdesk.destroy');
 
     // Kunden SLA-Zeiten
@@ -270,6 +280,10 @@ Route::middleware('auth.simple')->prefix('admin')->group(function () {
     Route::post('/automations/{automation}/test',         [AutomationController::class, 'test'])->name('automations.test');
     Route::get('/automations/{automation}/export-yaml',   [AutomationController::class, 'exportYaml'])->name('automations.export-yaml');
     Route::get('/automations/{automation}/logs',          [AutomationController::class, 'logs'])->name('automations.logs');
+
+    // ── Webhook-Bibliothek ────────────────────────────────────────────────────
+    Route::get('/webhooks/library',                [WebhookLibraryController::class, 'index'])->name('webhooks.library');
+    Route::post('/webhooks/library/regenerate-token', [PublicWebhookController::class, 'regenerateToken'])->name('webhooks.library.regenerate-token');
 
     // Mahnwesen
     Route::get('/dunning',                              [DunningController::class, 'index'])->name('dunning.index');

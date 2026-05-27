@@ -311,6 +311,7 @@
                     // System
                     ['label' => 'Automatisierungen','route' => 'automations.index',    'icon' => 'ph-lightning'],
                     ['label' => 'Webhooks',         'route' => 'webhooks.index',        'icon' => 'ph-plugs-connected'],
+                    ['label' => 'Webhook-Bibliothek','route' => 'webhooks.library',    'icon' => 'ph-book-open'],
                     ['label' => 'Team',             'route' => 'team.index',           'icon' => 'ph-users-three', 'admin_only' => true],
                     ['label' => 'Einstellungen',    'route' => 'settings.edit',        'icon' => 'ph-gear'],
                     ['label' => 'Export & Import',  'route' => 'export-import.index',  'icon' => 'ph-arrows-left-right'],
@@ -323,7 +324,7 @@
                     'Erfassung'   => ['time-entries.index', 'kanban.index', 'expenses.index', 'quotes.index', 'contracts.index', 'invoices.index'],
                     'Support'     => ['helpdesk.index', 'surveys.index'],
                     'ITIL'        => ['itil.incidents.index', 'itil.problems.index', 'itil.changes.index'],
-                    'System'      => ['automations.index', 'webhooks.index', 'team.index', 'settings.edit', 'export-import.index', 'tests.index'],
+                    'System'      => ['automations.index', 'webhooks.index', 'webhooks.library', 'team.index', 'settings.edit', 'export-import.index', 'tests.index'],
                 ];
             @endphp
 

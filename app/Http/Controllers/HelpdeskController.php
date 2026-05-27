@@ -114,13 +114,66 @@ class HelpdeskController extends Controller
     /** Admin: Ticket-Detail */
     public function show(Ticket $ticket)
     {
-        $ticket->load(['messages', 'supportCategory.workCategory', 'customer.projects']);
-        $categories = SupportCategory::orderBy('name')->get();
-        $projects   = $ticket->customer
+        $ticket->load(['messages', 'supportCategory.workCategory', 'customer', 'project']);
+        $categories   = SupportCategory::orderBy('name')->get();
+        $allCustomers = Customer::orderBy('name')->get();
+
+        // Alle Projekte gruppiert nach customer_id – für Alpine-Filterung im Frontend
+        $allProjectsJson = Project::orderBy('name')
+            ->get(['id', 'name', 'customer_id'])
+            ->groupBy('customer_id')
+            ->map(fn ($group) => $group->values())
+            ->toJson();
+
+        // Projekte des aktuell zugewiesenen Kunden (für „Als Aufgabe anlegen")
+        $projects = $ticket->customer_id
             ? Project::where('customer_id', $ticket->customer_id)->orderBy('name')->get()
             : collect();
 
-        return view('helpdesk.show', compact('ticket', 'categories', 'projects'));
+        return view('helpdesk.show', compact(
+            'ticket', 'categories', 'projects', 'allCustomers', 'allProjectsJson'
+        ));
+    }
+
+    /** Admin: Kunde und/oder Projekt manuell zuweisen */
+    public function assign(Request $request, Ticket $ticket)
+    {
+        $data = $request->validate([
+            'customer_id' => 'nullable|exists:customers,id',
+            'project_id'  => 'nullable|exists:projects,id',
+        ]);
+
+        // Sicherstellen, dass beide Keys immer vorhanden sind (nullable-Felder können fehlen)
+        $data['customer_id'] = $data['customer_id'] ?? null;
+        $data['project_id']  = $data['project_id']  ?? null;
+
+        // Wenn Projekt gesetzt, Kunde daraus ableiten (falls kein Kunde explizit gewählt)
+        if (!empty($data['project_id']) && empty($data['customer_id'])) {
+            $project = Project::find($data['project_id']);
+            if ($project) {
+                $data['customer_id'] = $project->customer_id;
+            }
+        }
+
+        // Wenn Kunde entfernt wird, Projekt ebenfalls entfernen
+        if (empty($data['customer_id'])) {
+            $data['project_id'] = null;
+        }
+
+        // Wenn Projekt nicht zum gewählten Kunden gehört, Projekt-Zuordnung ignorieren
+        if (!empty($data['project_id']) && !empty($data['customer_id'])) {
+            $project = Project::find($data['project_id']);
+            if ($project && $project->customer_id != $data['customer_id']) {
+                $data['project_id'] = null;
+            }
+        }
+
+        $ticket->update([
+            'customer_id' => $data['customer_id'],
+            'project_id'  => $data['project_id'],
+        ]);
+
+        return back()->with('success', 'Zuordnung wurde gespeichert.');
     }
 
     /** Admin: Ticket löschen */

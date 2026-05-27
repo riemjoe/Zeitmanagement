@@ -343,6 +343,81 @@
                 @endif
             </div>
 
+            {{-- ════ Kunden- & Projekt-Zuordnung ════ --}}
+            <div x-data="{
+                    allProjects: {{ $allProjectsJson }},
+                    selectedCustomer: '{{ $ticket->customer_id ?? '' }}',
+                    get filteredProjects() {
+                        if (!this.selectedCustomer) return [];
+                        return this.allProjects[this.selectedCustomer] ?? [];
+                    }
+                }"
+                class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+
+                <h2 class="font-semibold text-gray-700 dark:text-gray-300 text-sm mb-3 flex items-center gap-1.5">
+                    <i class="ph-bold ph-link text-teal-500"></i> Zuordnung
+                </h2>
+
+                {{-- Aktuelle Zuordnung anzeigen --}}
+                @if ($ticket->customer || $ticket->project)
+                    <div class="mb-3 space-y-1.5 text-xs text-gray-500 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-2">
+                        @if ($ticket->customer)
+                            <div class="flex items-center gap-1.5">
+                                <i class="ph-bold ph-buildings text-gray-400"></i>
+                                <a href="{{ route('customers.show', $ticket->customer) }}" class="text-blue-600 hover:underline font-medium">
+                                    {{ $ticket->customer->name }}
+                                </a>
+                            </div>
+                        @endif
+                        @if ($ticket->project)
+                            <div class="flex items-center gap-1.5">
+                                <i class="ph-bold ph-folder text-gray-400"></i>
+                                <a href="{{ route('projects.show', $ticket->project) }}" class="text-blue-600 hover:underline font-medium">
+                                    {{ $ticket->project->name }}
+                                </a>
+                            </div>
+                        @endif
+                    </div>
+                @endif
+
+                <form action="{{ route('helpdesk.assign', $ticket) }}" method="POST" class="space-y-3">
+                    @csrf @method('PATCH')
+
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Kunde</label>
+                        <select name="customer_id"
+                            x-model="selectedCustomer"
+                            class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500">
+                            <option value="">Kein Kunde</option>
+                            @foreach ($allCustomers as $c)
+                                <option value="{{ $c->id }}" {{ $ticket->customer_id == $c->id ? 'selected' : '' }}>
+                                    {{ $c->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Projekt</label>
+                        <select name="project_id"
+                            class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                            :disabled="filteredProjects.length === 0">
+                            <option value="">Kein Projekt</option>
+                            <template x-for="p in filteredProjects" :key="p.id">
+                                <option :value="p.id" :selected="p.id == {{ $ticket->project_id ?? 'null' }}" x-text="p.name"></option>
+                            </template>
+                        </select>
+                        <p x-show="selectedCustomer && filteredProjects.length === 0"
+                            class="text-xs text-gray-400 mt-1">Keine Projekte für diesen Kunden.</p>
+                    </div>
+
+                    <button type="submit"
+                        class="w-full px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition">
+                        Zuordnung speichern
+                    </button>
+                </form>
+            </div>
+
             {{-- ════ Abschluss-Bestätigungs-Popup ════ --}}
             <div x-show="showCloseConfirm" x-cloak
                 class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
