@@ -13,12 +13,24 @@ use Illuminate\Http\Request;
 
 class InvoiceController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $invoices = Invoice::with('customer')
             ->orderByDesc('date')
             ->get();
-        return view('invoices.index', compact('invoices'));
+
+        $overdueInvoices = Invoice::overdue()
+            ->with('customer')
+            ->orderBy('due_date')
+            ->get();
+
+        $reminderDays = (int) Setting::get('dunning_reminder_days', 7);
+        $noticeDays   = (int) Setting::get('dunning_notice_days',   14);
+        $activeTab    = $request->get('tab', 'rechnungen');
+
+        return view('invoices.index', compact(
+            'invoices', 'overdueInvoices', 'reminderDays', 'noticeDays', 'activeTab'
+        ));
     }
 
     public function create()

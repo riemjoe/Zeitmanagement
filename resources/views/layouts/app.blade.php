@@ -300,8 +300,7 @@
                     ['label' => 'Ausgaben',         'route' => 'expenses.index',       'icon' => 'ph-receipt'],
                     ['label' => 'Angebote',         'route' => 'quotes.index',            'icon' => 'ph-file-doc'],
                     ['label' => 'Verträge',         'route' => 'contracts.index',         'icon' => 'ph-files'],
-                    ['label' => 'Rechnungen',       'route' => 'invoices.index',          'icon' => 'ph-file-text'],
-                    ['label' => 'Mahnwesen',        'route' => 'dunning.index',           'icon' => 'ph-warning', 'badge' => $overdueInvoiceCount],
+                    ['label' => 'Rechnungen',       'route' => 'invoices.index',          'icon' => 'ph-file-text', 'badge' => $overdueInvoiceCount],
                     ['label' => 'Helpdesk',         'route' => 'helpdesk.index',       'icon' => 'ph-headset', 'badge' => $openTicketCount],
                     ['label' => 'Bewertungen',       'route' => 'surveys.index',        'icon' => 'ph-star'],
                     ['label' => 'Automatisierungen','route' => 'automations.index',    'icon' => 'ph-lightning'],
@@ -315,7 +314,7 @@
                 $groups = [
                     'Übersicht'   => ['dashboard'],
                     'Verwaltung'  => ['customers.index', 'projects.index', 'work-categories.index'],
-                    'Erfassung'   => ['time-entries.index', 'kanban.index', 'expenses.index', 'quotes.index', 'contracts.index', 'invoices.index', 'dunning.index'],
+                    'Erfassung'   => ['time-entries.index', 'kanban.index', 'expenses.index', 'quotes.index', 'contracts.index', 'invoices.index'],
                     'Support'     => ['helpdesk.index', 'surveys.index'],
                     'System'      => ['automations.index', 'webhooks.index', 'team.index', 'settings.edit', 'export-import.index', 'tests.index'],
                 ];

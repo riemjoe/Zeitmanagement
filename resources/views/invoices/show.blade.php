@@ -3,10 +3,20 @@
 
 @section('header-actions')
     <a href="{{ route('invoices.pdf', $invoice) }}"
-       class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg">⬇ Rechnung PDF</a>
+       class="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12m0 0l-3.5-3.5M12 16l3.5-3.5"/>
+        </svg>
+        Rechnung PDF
+    </a>
     @if($invoice->timeEntries->isNotEmpty() || $invoice->service_description)
     <a href="{{ route('invoices.leistungsbericht-pdf', $invoice) }}"
-       class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg">⬇ Leistungsbericht PDF</a>
+       class="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12m0 0l-3.5-3.5M12 16l3.5-3.5"/>
+        </svg>
+        Leistungsbericht PDF
+    </a>
     @endif
     @if($invoice->status !== 'paid')
     <a href="{{ route('invoices.edit', $invoice) }}"

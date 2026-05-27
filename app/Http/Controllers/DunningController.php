@@ -13,21 +13,11 @@ use Illuminate\Support\Facades\Mail;
 class DunningController extends Controller
 {
     /**
-     * Mahnwesen-Übersicht: alle überfälligen Rechnungen anzeigen.
+     * Mahnwesen-Übersicht: Weiterleitung zur integrierten Rechnungsübersicht.
      */
     public function index()
     {
-        // Alle gesendeten Rechnungen mit überschrittenem Zahlungsziel
-        $invoices = Invoice::overdue()
-            ->with('customer')
-            ->orderBy('due_date')
-            ->get();
-
-        // Einstellungen für die View
-        $reminderDays = (int) Setting::get('dunning_reminder_days', 7);
-        $noticeDays   = (int) Setting::get('dunning_notice_days',   14);
-
-        return view('dunning.index', compact('invoices', 'reminderDays', 'noticeDays'));
+        return redirect()->route('invoices.index', ['tab' => 'mahnwesen']);
     }
 
     /**
@@ -35,12 +25,16 @@ class DunningController extends Controller
      */
     public function sendReminder(Invoice $invoice)
     {
+        $tab = ['tab' => 'mahnwesen'];
+
         if ($invoice->status !== 'sent') {
-            return back()->with('error', 'Zahlungserinnerungen können nur für versendete Rechnungen erstellt werden.');
+            return redirect()->route('invoices.index', $tab)
+                ->with('error', 'Zahlungserinnerungen können nur für versendete Rechnungen erstellt werden.');
         }
 
         if ($invoice->reminder_sent_at) {
-            return back()->with('error', 'Eine Zahlungserinnerung wurde bereits versendet.');
+            return redirect()->route('invoices.index', $tab)
+                ->with('error', 'Eine Zahlungserinnerung wurde bereits versendet.');
         }
 
         $days       = (int) Setting::get('dunning_reminder_days', 7);
@@ -53,7 +47,8 @@ class DunningController extends Controller
             'dunning_due_date'  => $newDueDate->toDateString(),
         ]);
 
-        return back()->with('success', "Zahlungserinnerung für Rechnung {$invoice->invoice_number} wurde versendet. Neues Zahlungsziel: {$newDueDate->format('d.m.Y')}");
+        return redirect()->route('invoices.index', $tab)
+            ->with('success', "Zahlungserinnerung für Rechnung {$invoice->invoice_number} wurde versendet. Neues Zahlungsziel: {$newDueDate->format('d.m.Y')}");
     }
 
     /**
@@ -61,18 +56,23 @@ class DunningController extends Controller
      */
     public function sendDunning(Invoice $invoice)
     {
+        $tab = ['tab' => 'mahnwesen'];
+
         if ($invoice->status !== 'sent') {
-            return back()->with('error', 'Mahnungen können nur für versendete Rechnungen erstellt werden.');
+            return redirect()->route('invoices.index', $tab)
+                ->with('error', 'Mahnungen können nur für versendete Rechnungen erstellt werden.');
         }
 
         $level = $invoice->next_dunning_level;
 
         if ($level === 0) {
-            return back()->with('error', 'Bitte zuerst eine Zahlungserinnerung versenden.');
+            return redirect()->route('invoices.index', $tab)
+                ->with('error', 'Bitte zuerst eine Zahlungserinnerung versenden.');
         }
 
         if ($level > 3) {
-            return back()->with('error', 'Alle Mahnstufen wurden bereits ausgeschöpft.');
+            return redirect()->route('invoices.index', $tab)
+                ->with('error', 'Alle Mahnstufen wurden bereits ausgeschöpft.');
         }
 
         $days       = (int) Setting::get('dunning_notice_days', 14);
@@ -87,7 +87,8 @@ class DunningController extends Controller
         ]);
 
         $levelLabel = "{$level}. Mahnung";
-        return back()->with('success', "{$levelLabel} für Rechnung {$invoice->invoice_number} wurde versendet. Neues Zahlungsziel: {$newDueDate->format('d.m.Y')}");
+        return redirect()->route('invoices.index', $tab)
+            ->with('success', "{$levelLabel} für Rechnung {$invoice->invoice_number} wurde versendet. Neues Zahlungsziel: {$newDueDate->format('d.m.Y')}");
     }
 
     /**
