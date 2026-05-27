@@ -297,6 +297,52 @@
                 </form>
             </div>
 
+            {{-- ════ ITIL-Konvertierung ════ --}}
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+                <h2 class="font-semibold text-gray-700 dark:text-gray-300 text-sm mb-3 flex items-center gap-1.5">
+                    <i class="ph-bold ph-shield-check text-indigo-500"></i> ITIL
+                </h2>
+
+                @php
+                    $incident = \App\Models\Incident::where('ticket_id', $ticket->id)->first();
+                    $change   = \App\Models\ItilChange::where('ticket_id', $ticket->id)->first();
+                @endphp
+
+                @if($incident)
+                <a href="{{ route('itil.incidents.show', $incident) }}"
+                   class="flex items-center gap-2 text-sm text-red-600 hover:underline mb-2">
+                    <i class="ph-bold ph-fire text-sm"></i>
+                    {{ $incident->number }} – Incident anzeigen
+                </a>
+                @else
+                <form method="POST" action="{{ route('itil.incidents.convert-from-ticket', $ticket) }}" class="mb-2">
+                    @csrf
+                    <button type="submit"
+                            onclick="return confirm('Ticket als Incident anlegen?')"
+                            class="w-full flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 rounded-lg transition">
+                        <i class="ph-bold ph-fire"></i> Als Incident anlegen
+                    </button>
+                </form>
+                @endif
+
+                @if($change)
+                <a href="{{ route('itil.changes.show', $change) }}"
+                   class="flex items-center gap-2 text-sm text-indigo-600 hover:underline">
+                    <i class="ph-bold ph-arrows-clockwise text-sm"></i>
+                    {{ $change->number }} – Change anzeigen
+                </a>
+                @else
+                <form method="POST" action="{{ route('itil.changes.convert-from-ticket', $ticket) }}">
+                    @csrf
+                    <button type="submit"
+                            onclick="return confirm('Ticket als Change anlegen?')"
+                            class="w-full flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 rounded-lg transition">
+                        <i class="ph-bold ph-arrows-clockwise"></i> Als Change anlegen
+                    </button>
+                </form>
+                @endif
+            </div>
+
             {{-- ════ Abschluss-Bestätigungs-Popup ════ --}}
             <div x-show="showCloseConfirm" x-cloak
                 class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"

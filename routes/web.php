@@ -35,6 +35,10 @@ use App\Http\Controllers\ProjectMessageController;
 use App\Http\Controllers\TestController;
 use App\Http\Controllers\AutomationController;
 use App\Http\Controllers\DunningController;
+use App\Http\Controllers\IncidentController;
+use App\Http\Controllers\ProblemController;
+use App\Http\Controllers\ItilChangeController;
+use App\Http\Controllers\ItilWebhookController;
 
 // ── Authentifizierung (öffentlich) ──────────────────────────────────────────
 Route::get('/login',  [AuthController::class, 'showLogin'])->name('login');
@@ -86,6 +90,13 @@ Route::post('/survey/{token}', [PublicSurveyController::class, 'submit'])->name(
 // ── Automation-Webhooks (öffentlich, Token-gesichert) ────────────────────────
 Route::post('/webhook/{token}', [AutomationController::class, 'webhook'])->name('automations.webhook')
     ->middleware('throttle:60,1');
+
+// ── ITIL-Webhooks (öffentlich, Bearer-Token-gesichert) ───────────────────────
+Route::prefix('api/itil')->name('itil.api.')->middleware('throttle:60,1')->group(function () {
+    Route::post('/incidents', [ItilWebhookController::class, 'createIncident'])->name('incidents');
+    Route::post('/problems',  [ItilWebhookController::class, 'createProblem'])->name('problems');
+    Route::post('/changes',   [ItilWebhookController::class, 'createChange'])->name('changes');
+});
 
 // ── Öffentliche Helpdesk-Routen (kein Login erforderlich) ───────────────────
 // Schreib-Routen: max. 10 Anfragen pro 5 Minuten pro IP
@@ -264,6 +275,48 @@ Route::middleware('auth.simple')->prefix('admin')->group(function () {
     Route::get('/dunning',                              [DunningController::class, 'index'])->name('dunning.index');
     Route::post('/dunning/{invoice}/reminder',          [DunningController::class, 'sendReminder'])->name('dunning.reminder');
     Route::post('/dunning/{invoice}/notice',            [DunningController::class, 'sendDunning'])->name('dunning.notice');
+
+    // ── ITIL ──────────────────────────────────────────────────────────────────
+
+    // Incidents
+    Route::prefix('itil/incidents')->name('itil.incidents.')->group(function () {
+        Route::get('/',                                [IncidentController::class, 'index'])->name('index');
+        Route::get('/create',                          [IncidentController::class, 'create'])->name('create');
+        Route::post('/',                               [IncidentController::class, 'store'])->name('store');
+        Route::get('/{incident}',                      [IncidentController::class, 'show'])->name('show');
+        Route::get('/{incident}/edit',                 [IncidentController::class, 'edit'])->name('edit');
+        Route::put('/{incident}',                      [IncidentController::class, 'update'])->name('update');
+        Route::delete('/{incident}',                   [IncidentController::class, 'destroy'])->name('destroy');
+        Route::post('/{incident}/link-problem',        [IncidentController::class, 'linkProblem'])->name('link-problem');
+    });
+
+    // Problems
+    Route::prefix('itil/problems')->name('itil.problems.')->group(function () {
+        Route::get('/',                                    [ProblemController::class, 'index'])->name('index');
+        Route::get('/create',                              [ProblemController::class, 'create'])->name('create');
+        Route::post('/',                                   [ProblemController::class, 'store'])->name('store');
+        Route::get('/{problem}',                           [ProblemController::class, 'show'])->name('show');
+        Route::get('/{problem}/edit',                      [ProblemController::class, 'edit'])->name('edit');
+        Route::put('/{problem}',                           [ProblemController::class, 'update'])->name('update');
+        Route::delete('/{problem}',                        [ProblemController::class, 'destroy'])->name('destroy');
+        Route::post('/{problem}/attach-incident',          [ProblemController::class, 'attachIncident'])->name('attach-incident');
+        Route::delete('/{problem}/detach-incident/{incident}', [ProblemController::class, 'detachIncident'])->name('detach-incident');
+    });
+
+    // Changes
+    Route::prefix('itil/changes')->name('itil.changes.')->group(function () {
+        Route::get('/',                                [ItilChangeController::class, 'index'])->name('index');
+        Route::get('/create',                          [ItilChangeController::class, 'create'])->name('create');
+        Route::post('/',                               [ItilChangeController::class, 'store'])->name('store');
+        Route::get('/{itilChange}',                    [ItilChangeController::class, 'show'])->name('show');
+        Route::get('/{itilChange}/edit',               [ItilChangeController::class, 'edit'])->name('edit');
+        Route::put('/{itilChange}',                    [ItilChangeController::class, 'update'])->name('update');
+        Route::delete('/{itilChange}',                 [ItilChangeController::class, 'destroy'])->name('destroy');
+    });
+
+    // Ticket → ITIL Konvertierung
+    Route::post('/tickets/{ticket}/convert-to-incident', [IncidentController::class, 'convertFromTicket'])->name('itil.incidents.convert-from-ticket');
+    Route::post('/tickets/{ticket}/convert-to-change',   [ItilChangeController::class, 'convertFromTicket'])->name('itil.changes.convert-from-ticket');
 
     // Webhooks
     Route::resource('webhooks', \App\Http\Controllers\WebhookController::class);

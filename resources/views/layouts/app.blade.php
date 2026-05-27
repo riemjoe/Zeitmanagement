@@ -288,8 +288,9 @@
         {{-- Navigation --}}
         <nav class="flex-1 p-3 space-y-0.5 overflow-y-auto">
             @php
-                $openTicketCount   = \App\Models\Ticket::whereIn('status', ['open', 'in_progress'])->count();
+                $openTicketCount     = \App\Models\Ticket::whereIn('status', ['open', 'in_progress'])->count();
                 $overdueInvoiceCount = \App\Models\Invoice::overdue()->count();
+                $openIncidentCount   = \App\Models\Incident::whereIn('status', ['open', 'in_progress'])->count();
                 $nav = [
                     ['label' => 'Dashboard',       'route' => 'dashboard',            'icon' => 'ph-squares-four'],
                     ['label' => 'Kunden',           'route' => 'customers.index',      'icon' => 'ph-users'],
@@ -302,7 +303,12 @@
                     ['label' => 'Verträge',         'route' => 'contracts.index',         'icon' => 'ph-files'],
                     ['label' => 'Rechnungen',       'route' => 'invoices.index',          'icon' => 'ph-file-text', 'badge' => $overdueInvoiceCount],
                     ['label' => 'Helpdesk',         'route' => 'helpdesk.index',       'icon' => 'ph-headset', 'badge' => $openTicketCount],
-                    ['label' => 'Bewertungen',       'route' => 'surveys.index',        'icon' => 'ph-star'],
+                    ['label' => 'Bewertungen',      'route' => 'surveys.index',        'icon' => 'ph-star'],
+                    // ITIL
+                    ['label' => 'Incidents',        'route' => 'itil.incidents.index', 'icon' => 'ph-fire', 'badge' => $openIncidentCount],
+                    ['label' => 'Problems',         'route' => 'itil.problems.index',  'icon' => 'ph-bug'],
+                    ['label' => 'Changes',          'route' => 'itil.changes.index',   'icon' => 'ph-arrows-clockwise'],
+                    // System
                     ['label' => 'Automatisierungen','route' => 'automations.index',    'icon' => 'ph-lightning'],
                     ['label' => 'Webhooks',         'route' => 'webhooks.index',        'icon' => 'ph-plugs-connected'],
                     ['label' => 'Team',             'route' => 'team.index',           'icon' => 'ph-users-three', 'admin_only' => true],
@@ -316,6 +322,7 @@
                     'Verwaltung'  => ['customers.index', 'projects.index', 'work-categories.index'],
                     'Erfassung'   => ['time-entries.index', 'kanban.index', 'expenses.index', 'quotes.index', 'contracts.index', 'invoices.index'],
                     'Support'     => ['helpdesk.index', 'surveys.index'],
+                    'ITIL'        => ['itil.incidents.index', 'itil.problems.index', 'itil.changes.index'],
                     'System'      => ['automations.index', 'webhooks.index', 'team.index', 'settings.edit', 'export-import.index', 'tests.index'],
                 ];
             @endphp

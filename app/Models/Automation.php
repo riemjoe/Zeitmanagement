@@ -48,6 +48,10 @@ class Automation extends Model
         'Quote'            => 'Angebot',
         'Contract'         => 'Vertrag',
         'Milestone'        => 'Meilenstein',
+        // ITIL
+        'Incident'         => 'ITIL Incident',
+        'Problem'          => 'ITIL Problem',
+        'ItilChange'       => 'ITIL Change',
     ];
 
     // ── Aktions-Typen ────────────────────────────────────────────────────────
@@ -77,6 +81,10 @@ class Automation extends Model
         'Quote'      => ['id', 'number', 'status', 'total', 'customer_id', 'valid_until', 'created_at', 'updated_at'],
         'Contract'   => ['id', 'title', 'status', 'customer_id', 'start_date', 'end_date', 'created_at', 'updated_at'],
         'Milestone'  => ['id', 'title', 'status', 'project_id', 'due_date', 'created_at', 'updated_at'],
+        // ITIL
+        'Incident'   => ['id', 'number', 'title', 'status', 'priority', 'impact', 'urgency', 'category', 'affected_service', 'customer_id', 'ticket_id', 'problem_id', 'assigned_to', 'reported_by', 'response_due_at', 'resolve_due_at', 'resolved_at', 'created_at', 'updated_at'],
+        'Problem'    => ['id', 'number', 'title', 'status', 'priority', 'impact', 'category', 'affected_service', 'customer_id', 'assigned_to', 'root_cause', 'workaround', 'resolved_at', 'created_at', 'updated_at'],
+        'ItilChange' => ['id', 'number', 'title', 'status', 'type', 'priority', 'impact', 'risk', 'category', 'affected_service', 'customer_id', 'ticket_id', 'assigned_to', 'requested_by', 'planned_start_at', 'planned_end_at', 'completed_at', 'created_at', 'updated_at'],
     ];
 
     // ── Schritt-Typen (inkl. Kontrollfluss) ──────────────────────────────────
