@@ -156,6 +156,36 @@
             <textarea name="service_description" x-model="serviceDescription" rows="8"
                       placeholder="Leistungszeitraum und Beschreibung der erbrachten Tätigkeiten …"
                       class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+
+            {{-- Leistungsbericht miterstellen --}}
+            <div class="mt-4 border-t pt-4" x-data="{ createLb: false }">
+                <label class="flex items-start gap-2.5 cursor-pointer select-none">
+                    <input type="checkbox" name="create_leistungsbericht" value="1"
+                           x-model="createLb"
+                           class="mt-0.5 w-4 h-4 rounded border-gray-300 text-indigo-600">
+                    <div>
+                        <span class="text-sm font-medium text-gray-700">Leistungsbericht erstellen</span>
+                        <p class="text-xs text-gray-400 mt-0.5">
+                            Erstellt gleichzeitig einen Leistungsbericht (inkl. Incidents, Problems &amp; Changes) im Tab "Leistungsberichte".
+                        </p>
+                    </div>
+                </label>
+
+                <div x-show="createLb" class="mt-3 grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Zeitraum von</label>
+                        <input type="date" name="leistungsbericht_from"
+                               :value="minEntryDate || '{{ now()->startOfMonth()->format('Y-m-d') }}'"
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Zeitraum bis</label>
+                        <input type="date" name="leistungsbericht_to"
+                               :value="maxEntryDate || '{{ now()->format('Y-m-d') }}'"
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+            </div>
         </div>
 
         {{-- Zusammenfassung --}}
@@ -230,6 +260,19 @@ function invoiceForm() {
             return this.expenses
                 .filter(e => this.selectedExpenses.includes(e.id))
                 .reduce((s, e) => s + e.amount, 0);
+        },
+        // Datumsgrenzen für Leistungsbericht (aus gewählten Zeiteinträgen, Format Y-m-d)
+        get minEntryDate() {
+            const selected = this.timeEntries.filter(e => this.selectedTimeEntries.includes(e.id));
+            if (!selected.length) return '';
+            const parseDe = str => { const [d, m, y] = str.split('.'); return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`; };
+            return selected.map(e => parseDe(e.date)).sort()[0];
+        },
+        get maxEntryDate() {
+            const selected = this.timeEntries.filter(e => this.selectedTimeEntries.includes(e.id));
+            if (!selected.length) return '';
+            const parseDe = str => { const [d, m, y] = str.split('.'); return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`; };
+            return selected.map(e => parseDe(e.date)).sort().reverse()[0];
         },
 
         loadError: '',

@@ -64,6 +64,11 @@ class Customer extends Model
         return $this->hasMany(CustomerSlaSetting::class);
     }
 
+    public function itilSlaSettings(): HasMany
+    {
+        return $this->hasMany(CustomerItilSlaSetting::class);
+    }
+
     /**
      * Vollständige Adresse als String.
      */

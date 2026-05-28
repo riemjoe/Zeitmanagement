@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Expense;
 use App\Models\Invoice;
+use App\Models\Leistungsbericht;
 use App\Models\Project;
 use App\Models\Setting;
 use App\Models\TimeEntry;
@@ -24,12 +25,16 @@ class InvoiceController extends Controller
             ->orderBy('due_date')
             ->get();
 
+        $leistungsberichte = Leistungsbericht::with(['customer', 'invoice'])
+            ->orderByDesc('date_to')
+            ->get();
+
         $reminderDays = (int) Setting::get('dunning_reminder_days', 7);
         $noticeDays   = (int) Setting::get('dunning_notice_days',   14);
         $activeTab    = $request->get('tab', 'rechnungen');
 
         return view('invoices.index', compact(
-            'invoices', 'overdueInvoices', 'reminderDays', 'noticeDays', 'activeTab'
+            'invoices', 'overdueInvoices', 'leistungsberichte', 'reminderDays', 'noticeDays', 'activeTab'
         ));
     }
 
@@ -100,17 +105,20 @@ class InvoiceController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'customer_id'         => 'required|exists:customers,id',
-            'date'                => 'required|date',
-            'due_date'            => 'required|date|after_or_equal:date',
-            'tax_rate'            => 'required|numeric|min:0|max:100',
-            'discount'            => 'nullable|numeric|min:0',
-            'notes'               => 'nullable|string',
-            'service_description' => 'nullable|string',
-            'time_entry_ids'      => 'nullable|array',
-            'time_entry_ids.*'    => 'exists:time_entries,id',
-            'expense_ids'         => 'nullable|array',
-            'expense_ids.*'       => 'exists:expenses,id',
+            'customer_id'              => 'required|exists:customers,id',
+            'date'                     => 'required|date',
+            'due_date'                 => 'required|date|after_or_equal:date',
+            'tax_rate'                 => 'required|numeric|min:0|max:100',
+            'discount'                 => 'nullable|numeric|min:0',
+            'notes'                    => 'nullable|string',
+            'service_description'      => 'nullable|string',
+            'leistungsbericht_from'    => 'nullable|date',
+            'leistungsbericht_to'      => 'nullable|date',
+            'create_leistungsbericht'  => 'nullable|boolean',
+            'time_entry_ids'           => 'nullable|array',
+            'time_entry_ids.*'         => 'exists:time_entries,id',
+            'expense_ids'              => 'nullable|array',
+            'expense_ids.*'            => 'exists:expenses,id',
         ]);
 
         $settings = Setting::getAll();
@@ -135,6 +143,18 @@ class InvoiceController extends Controller
         if (!empty($data['expense_ids'])) {
             $invoice->expenses()->attach($data['expense_ids']);
             Expense::whereIn('id', $data['expense_ids'])->update(['billed' => true]);
+        }
+
+        // Leistungsbericht automatisch erstellen wenn gewünscht
+        if ($request->boolean('create_leistungsbericht') && !empty($data['leistungsbericht_from']) && !empty($data['leistungsbericht_to'])) {
+            Leistungsbericht::create([
+                'customer_id'     => $data['customer_id'],
+                'invoice_id'      => $invoice->id,
+                'date_from'       => $data['leistungsbericht_from'],
+                'date_to'         => $data['leistungsbericht_to'],
+                'description'     => $data['service_description'] ?? null,
+                'sender_snapshot' => $settings,
+            ]);
         }
 
         return redirect()->route('invoices.show', $invoice)->with('success', 'Rechnung wurde erstellt.');

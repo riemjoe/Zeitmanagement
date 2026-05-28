@@ -125,8 +125,25 @@ class Incident extends Model
 
     // ── SLA berechnen ────────────────────────────────────────────────────────
 
-    public static function calcSla(string $priority): array
+    /**
+     * SLA-Fristen berechnen.
+     * Reihenfolge: Kunden-SLA → globale Einstellung → Hardcoded-Default.
+     */
+    public static function calcSla(string $priority, ?int $customerId = null): array
     {
+        if ($customerId) {
+            $customerSla = \App\Models\CustomerItilSlaSetting::where('customer_id', $customerId)
+                ->where('priority', $priority)
+                ->first();
+
+            if ($customerSla) {
+                return [
+                    'response_due_at' => now()->addHours($customerSla->response_hours),
+                    'resolve_due_at'  => now()->addHours($customerSla->resolve_hours),
+                ];
+            }
+        }
+
         $responseHours = (int) Setting::get("itil_sla_{$priority}_response", self::SLA_DEFAULTS[$priority]['response']);
         $resolveHours  = (int) Setting::get("itil_sla_{$priority}_resolve",  self::SLA_DEFAULTS[$priority]['resolve']);
 

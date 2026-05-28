@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\CustomerItilSlaSetting;
 use App\Models\CustomerSlaSetting;
+use App\Models\Incident;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -137,6 +139,34 @@ class CustomerController extends Controller
         }
 
         return back()->with('success', 'SLA-Zeiten wurden gespeichert.');
+    }
+
+    /** ITIL-SLA-Zeiten (Incidents) pro Priorität für einen Kunden speichern */
+    public function updateItilSla(Request $request, Customer $customer)
+    {
+        $priorities = array_keys(Incident::PRIORITIES);
+
+        foreach ($priorities as $priority) {
+            $responseHours = $request->input("itil_sla.{$priority}.response");
+            $resolveHours  = $request->input("itil_sla.{$priority}.resolve");
+
+            if ($responseHours !== null && $responseHours !== '' && $resolveHours !== null && $resolveHours !== '') {
+                CustomerItilSlaSetting::updateOrCreate(
+                    ['customer_id' => $customer->id, 'priority' => $priority],
+                    [
+                        'response_hours' => max(1, (int) $responseHours),
+                        'resolve_hours'  => max(1, (int) $resolveHours),
+                    ]
+                );
+            } else {
+                // Leer = Eintrag entfernen → globale Einstellung greift
+                CustomerItilSlaSetting::where('customer_id', $customer->id)
+                    ->where('priority', $priority)
+                    ->delete();
+            }
+        }
+
+        return back()->with('success', 'ITIL-SLA-Zeiten wurden gespeichert.');
     }
 
 

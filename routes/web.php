@@ -39,6 +39,7 @@ use App\Http\Controllers\IncidentController;
 use App\Http\Controllers\ProblemController;
 use App\Http\Controllers\ItilChangeController;
 use App\Http\Controllers\ItilWebhookController;
+use App\Http\Controllers\LeistungsberichtController;
 use App\Http\Controllers\PublicWebhookController;
 use App\Http\Controllers\WebhookController;
 
@@ -162,6 +163,13 @@ Route::middleware('auth.simple')->prefix('admin')->group(function () {
         ->name('invoices.leistungsbericht-pdf');
     Route::resource('invoices', InvoiceController::class);
 
+    // Leistungsberichte (standalone + rechnungsgebunden)
+    Route::get('/leistungsberichte',           [LeistungsberichtController::class, 'index'])->name('leistungsberichte.index');
+    Route::get('/leistungsberichte/create',    [LeistungsberichtController::class, 'create'])->name('leistungsberichte.create');
+    Route::post('/leistungsberichte',          [LeistungsberichtController::class, 'store'])->name('leistungsberichte.store');
+    Route::get('/leistungsberichte/{leistungsbericht}', [LeistungsberichtController::class, 'show'])->name('leistungsberichte.show');
+    Route::delete('/leistungsberichte/{leistungsbericht}', [LeistungsberichtController::class, 'destroy'])->name('leistungsberichte.destroy');
+
     // Angebote
     Route::post('/quotes/{quote}/convert', [QuoteController::class, 'convertToProject'])
         ->name('quotes.convert');
@@ -253,6 +261,7 @@ Route::middleware('auth.simple')->prefix('admin')->group(function () {
 
     // Kunden SLA-Zeiten
     Route::put('/customers/{customer}/sla',             [CustomerController::class, 'updateSla'])->name('customers.sla.update');
+    Route::put('/customers/{customer}/itil-sla',        [CustomerController::class, 'updateItilSla'])->name('customers.itil-sla.update');
 
     // Kunden-Portal Verwaltung (Admin)
     Route::post('/customers/{customer}/portal/enable',            [CustomerPortalController::class, 'adminEnablePortal'])->name('customers.portal.enable');

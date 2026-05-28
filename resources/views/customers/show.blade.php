@@ -367,5 +367,131 @@
             </div>
         </div>
     </div>
+
+    {{-- ── ITIL-SLA-Zeiten ──────────────────────────────────────────────────────── --}}
+    <div x-data="{ showItilSlaModal: false }" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 mt-6">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+            <h3 class="font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                <i class="ph-bold ph-shield-check text-indigo-500"></i> SLA-Zeiten (ITIL)
+            </h3>
+            <button @click="showItilSlaModal = true"
+                    class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-lg transition">
+                <i class="ph-bold ph-pencil mr-1"></i> Bearbeiten
+            </button>
+        </div>
+
+        @php
+            $itilSlaDefaults = \App\Models\Incident::SLA_DEFAULTS;
+            $itilSlaSettings = $customer->itilSlaSettings()->get()->keyBy('priority');
+            $priorityLabels  = ['critical' => 'Kritisch', 'high' => 'Hoch', 'medium' => 'Mittel', 'low' => 'Niedrig'];
+            $priorityColors  = ['critical' => 'text-red-600', 'high' => 'text-orange-500', 'medium' => 'text-yellow-600', 'low' => 'text-gray-500'];
+        @endphp
+
+        <div class="px-5 py-4">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-xs text-gray-400 uppercase tracking-wide border-b border-gray-100">
+                        <th class="text-left pb-2 font-semibold">Priorität</th>
+                        <th class="text-center pb-2 font-semibold">Reaktionszeit</th>
+                        <th class="text-center pb-2 font-semibold">Lösungszeit</th>
+                        <th class="text-right pb-2 font-semibold">Quelle</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    @foreach($priorityLabels as $prio => $label)
+                    @php
+                        $custom = $itilSlaSettings->get($prio);
+                        $resp   = $custom ? $custom->response_hours : (int)\App\Models\Setting::get("itil_sla_{$prio}_response", $itilSlaDefaults[$prio]['response']);
+                        $res    = $custom ? $custom->resolve_hours  : (int)\App\Models\Setting::get("itil_sla_{$prio}_resolve",   $itilSlaDefaults[$prio]['resolve']);
+                    @endphp
+                    <tr>
+                        <td class="py-2.5 font-medium {{ $priorityColors[$prio] }}">{{ $label }}</td>
+                        <td class="py-2.5 text-center text-gray-700">{{ $resp }} h</td>
+                        <td class="py-2.5 text-center text-gray-700">{{ $res }} h</td>
+                        <td class="py-2.5 text-right">
+                            @if($custom)
+                                <span class="text-xs bg-indigo-50 text-indigo-600 border border-indigo-100 px-2 py-0.5 rounded-full">Kundenspezifisch</span>
+                            @else
+                                <span class="text-xs text-gray-400">Global</span>
+                            @endif
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+            <p class="text-xs text-gray-400 mt-3">
+                Gilt für Incidents, die über Webhook für diesen Kunden erstellt werden.
+                Globale Standardwerte werden in den
+                <a href="{{ route('settings.edit') }}#itil-sla" class="text-indigo-500 hover:underline">Einstellungen</a> festgelegt.
+            </p>
+        </div>
+
+        {{-- Modal --}}
+        <div x-show="showItilSlaModal" x-cloak
+             class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+             @keydown.escape.window="showItilSlaModal = false">
+            <div @click.outside="showItilSlaModal = false"
+                 class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+                <div class="flex items-center justify-between px-6 py-4 border-b">
+                    <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                        <i class="ph-bold ph-shield-check text-indigo-500"></i> ITIL-SLA-Zeiten bearbeiten
+                    </h3>
+                    <button @click="showItilSlaModal = false" class="text-gray-400 hover:text-gray-600">
+                        <i class="ph-bold ph-x text-lg"></i>
+                    </button>
+                </div>
+                <div class="px-6 py-5">
+                    <p class="text-sm text-gray-500 mb-4">
+                        Legen Sie kundenspezifische SLA-Zeiten (in Stunden) pro Priorität fest.
+                        Leer lassen bedeutet, dass die globale Einstellung greift.
+                    </p>
+                    <form action="{{ route('customers.itil-sla.update', $customer) }}" method="POST">
+                        @csrf @method('PUT')
+                        <table class="w-full text-sm mb-4">
+                            <thead>
+                                <tr class="text-xs text-gray-400 uppercase tracking-wide border-b">
+                                    <th class="text-left pb-2 font-semibold">Priorität</th>
+                                    <th class="text-center pb-2 font-semibold">Reaktion (h)</th>
+                                    <th class="text-center pb-2 font-semibold">Lösung (h)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-50">
+                                @foreach($priorityLabels as $prio => $label)
+                                @php $custom = $itilSlaSettings->get($prio); @endphp
+                                <tr>
+                                    <td class="py-2.5 font-medium {{ $priorityColors[$prio] }}">{{ $label }}</td>
+                                    <td class="py-2 px-2">
+                                        <input type="number" name="itil_sla[{{ $prio }}][response]"
+                                               value="{{ $custom?->response_hours }}"
+                                               min="1" step="1"
+                                               placeholder="{{ $itilSlaDefaults[$prio]['response'] }} (global)"
+                                               class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                                    </td>
+                                    <td class="py-2 px-2">
+                                        <input type="number" name="itil_sla[{{ $prio }}][resolve]"
+                                               value="{{ $custom?->resolve_hours }}"
+                                               min="1" step="1"
+                                               placeholder="{{ $itilSlaDefaults[$prio]['resolve'] }} (global)"
+                                               class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                        <div class="flex gap-2 pt-2">
+                            <button type="submit"
+                                class="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition">
+                                <i class="ph-bold ph-floppy-disk mr-1"></i> Speichern
+                            </button>
+                            <button type="button" @click="showItilSlaModal = false"
+                                class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg transition">
+                                Abbrechen
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
