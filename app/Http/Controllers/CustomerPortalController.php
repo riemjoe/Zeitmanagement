@@ -3,7 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Incident;
+use App\Models\ItilChange;
+use App\Models\Problem;
 use App\Models\Setting;
+use App\Models\TimeEntry;
 use App\Mail\CustomerPortalInvitation;
 use App\Services\TotpService;
 use Illuminate\Http\Request;
@@ -214,13 +218,30 @@ class CustomerPortalController extends Controller
     public function dashboard()
     {
         $customer = Customer::findOrFail(session('portal_customer_id'));
-        $customer->load(['projects', 'tickets' => fn($q) => $q->latest()->limit(5), 'invoices' => fn($q) => $q->latest()->limit(5)]);
+        $customer->load([
+            'projects',
+            'tickets'  => fn($q) => $q->latest()->limit(5),
+            'invoices' => fn($q) => $q->latest()->limit(5),
+        ]);
 
-        $openTickets   = $customer->tickets()->whereNotIn('status', ['closed', 'resolved'])->count();
-        $openInvoices  = $customer->invoices()->where('status', 'sent')->count();
+        $openTickets    = $customer->tickets()->whereNotIn('status', ['closed', 'resolved'])->count();
+        $openInvoices   = $customer->invoices()->where('status', 'sent')->count();
         $activeProjects = $customer->projects()->where('status', 'active')->count();
 
-        return view('portal.dashboard', compact('customer', 'openTickets', 'openInvoices', 'activeProjects'));
+        $openIncidents  = Incident::where('customer_id', $customer->id)
+            ->whereNotIn('status', ['resolved', 'closed'])->count();
+        $activeChanges  = ItilChange::where('customer_id', $customer->id)
+            ->whereNotIn('status', ['completed', 'cancelled'])->count();
+
+        $recentIncidents = Incident::where('customer_id', $customer->id)
+            ->latest()->limit(5)->get();
+        $recentChanges   = ItilChange::where('customer_id', $customer->id)
+            ->latest()->limit(5)->get();
+
+        return view('portal.dashboard', compact(
+            'customer', 'openTickets', 'openInvoices', 'activeProjects',
+            'openIncidents', 'activeChanges', 'recentIncidents', 'recentChanges'
+        ));
     }
 
     public function tickets()
@@ -254,6 +275,43 @@ class CustomerPortalController extends Controller
         $customer = Customer::findOrFail(session('portal_customer_id'));
         $invoices = $customer->invoices()->latest()->paginate(20);
         return view('portal.invoices', compact('customer', 'invoices'));
+    }
+
+    public function incidents()
+    {
+        $customer  = Customer::findOrFail(session('portal_customer_id'));
+        $incidents = Incident::where('customer_id', $customer->id)
+            ->latest()->paginate(25);
+        return view('portal.incidents', compact('customer', 'incidents'));
+    }
+
+    public function problems()
+    {
+        $customer = Customer::findOrFail(session('portal_customer_id'));
+        $problems = Problem::where('customer_id', $customer->id)
+            ->latest()->paginate(25);
+        return view('portal.problems', compact('customer', 'problems'));
+    }
+
+    public function changes()
+    {
+        $customer = Customer::findOrFail(session('portal_customer_id'));
+        $changes  = ItilChange::where('customer_id', $customer->id)
+            ->orderByDesc('created_at')->paginate(25);
+        return view('portal.changes', compact('customer', 'changes'));
+    }
+
+    public function timeEntries()
+    {
+        $customer = Customer::findOrFail(session('portal_customer_id'));
+
+        $entries = TimeEntry::with(['project', 'workCategory'])
+            ->whereHas('project', fn($q) => $q->where('customer_id', $customer->id))
+            ->where('billed', true)
+            ->orderByDesc('date')
+            ->paginate(40);
+
+        return view('portal.time-entries', compact('customer', 'entries'));
     }
 
     // ── Admin: Portal-Zugang verwalten ──────────────────────────────────────

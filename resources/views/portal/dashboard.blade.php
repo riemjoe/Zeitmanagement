@@ -3,33 +3,125 @@
 
 @section('content')
 {{-- KPI-Karten --}}
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-    <div class="bg-white rounded-xl border border-gray-200 p-5">
-        <div class="flex items-center justify-between mb-3">
-            <span class="text-sm text-gray-500 font-medium">Aktive Projekte</span>
-            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                <i class="ph-bold ph-folder-simple-open text-blue-600 text-sm"></i>
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+    <div class="bg-white rounded-xl border border-gray-200 p-4">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-xs text-gray-500 font-medium">Aktive Projekte</span>
+            <div class="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i class="ph-bold ph-folder-simple-open text-blue-600 text-xs"></i>
             </div>
         </div>
-        <p class="text-3xl font-bold text-gray-900">{{ $activeProjects }}</p>
+        <p class="text-2xl font-bold text-gray-900">{{ $activeProjects }}</p>
     </div>
-    <div class="bg-white rounded-xl border border-gray-200 p-5">
-        <div class="flex items-center justify-between mb-3">
-            <span class="text-sm text-gray-500 font-medium">Offene Tickets</span>
-            <div class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
-                <i class="ph-bold ph-headset text-amber-600 text-sm"></i>
+    <div class="bg-white rounded-xl border border-gray-200 p-4">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-xs text-gray-500 font-medium">Offene Tickets</span>
+            <div class="w-7 h-7 bg-amber-100 rounded-lg flex items-center justify-center">
+                <i class="ph-bold ph-headset text-amber-600 text-xs"></i>
             </div>
         </div>
-        <p class="text-3xl font-bold text-gray-900">{{ $openTickets }}</p>
+        <p class="text-2xl font-bold text-gray-900">{{ $openTickets }}</p>
     </div>
-    <div class="bg-white rounded-xl border border-gray-200 p-5">
-        <div class="flex items-center justify-between mb-3">
-            <span class="text-sm text-gray-500 font-medium">Offene Rechnungen</span>
-            <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
-                <i class="ph-bold ph-receipt text-red-600 text-sm"></i>
+    <div class="bg-white rounded-xl border border-gray-200 p-4">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-xs text-gray-500 font-medium">Offene Rechnungen</span>
+            <div class="w-7 h-7 bg-violet-100 rounded-lg flex items-center justify-center">
+                <i class="ph-bold ph-receipt text-violet-600 text-xs"></i>
             </div>
         </div>
-        <p class="text-3xl font-bold text-gray-900">{{ $openInvoices }}</p>
+        <p class="text-2xl font-bold text-gray-900">{{ $openInvoices }}</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-4 {{ $openIncidents > 0 ? 'border-red-200 bg-red-50' : '' }}">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-xs {{ $openIncidents > 0 ? 'text-red-600' : 'text-gray-500' }} font-medium">Offene Incidents</span>
+            <div class="w-7 h-7 {{ $openIncidents > 0 ? 'bg-red-200' : 'bg-red-100' }} rounded-lg flex items-center justify-center">
+                <i class="ph-bold ph-warning-circle text-red-600 text-xs"></i>
+            </div>
+        </div>
+        <p class="text-2xl font-bold {{ $openIncidents > 0 ? 'text-red-700' : 'text-gray-900' }}">{{ $openIncidents }}</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-4">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-xs text-gray-500 font-medium">Aktive Changes</span>
+            <div class="w-7 h-7 bg-indigo-100 rounded-lg flex items-center justify-center">
+                <i class="ph-bold ph-arrows-clockwise text-indigo-600 text-xs"></i>
+            </div>
+        </div>
+        <p class="text-2xl font-bold text-gray-900">{{ $activeChanges }}</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    {{-- Aktuelle Incidents --}}
+    <div class="bg-white rounded-xl border border-gray-200">
+        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                <i class="ph-bold ph-warning-circle text-red-400"></i> Aktuelle Incidents
+            </h3>
+            <a href="{{ route('portal.incidents') }}" class="text-xs text-indigo-600 hover:underline">Alle anzeigen</a>
+        </div>
+        <div class="divide-y divide-gray-50">
+            @forelse($recentIncidents as $inc)
+            @php
+                $prioColors = ['critical'=>'red','high'=>'orange','medium'=>'yellow','low'=>'gray'];
+                $pc = $prioColors[$inc->priority] ?? 'gray';
+                $statusColors = ['open'=>'blue','in_progress'=>'indigo','pending'=>'yellow','resolved'=>'green','closed'=>'gray'];
+                $sc = $statusColors[$inc->status] ?? 'gray';
+            @endphp
+            <div class="flex items-center justify-between px-5 py-3 gap-3">
+                <div class="min-w-0 flex-1">
+                    <p class="text-sm font-medium text-gray-800 truncate">{{ $inc->title }}</p>
+                    <p class="text-xs text-gray-400 mt-0.5">
+                        {{ $inc->number }}
+                        @if($inc->affected_service) · {{ $inc->affected_service }} @endif
+                        · {{ $inc->created_at->diffForHumans() }}
+                    </p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <span class="text-xs px-2 py-0.5 rounded-full bg-{{ $pc }}-100 text-{{ $pc }}-700">{{ $inc->priority_label }}</span>
+                    <span class="text-xs px-2 py-0.5 rounded-full bg-{{ $sc }}-100 text-{{ $sc }}-700">{{ $inc->status_label }}</span>
+                </div>
+            </div>
+            @empty
+            <p class="px-5 py-6 text-center text-gray-400 text-sm">Keine Incidents vorhanden.</p>
+            @endforelse
+        </div>
+    </div>
+
+    {{-- Aktuelle Changes --}}
+    <div class="bg-white rounded-xl border border-gray-200">
+        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                <i class="ph-bold ph-arrows-clockwise text-indigo-400"></i> Aktuelle Changes
+            </h3>
+            <a href="{{ route('portal.changes') }}" class="text-xs text-indigo-600 hover:underline">Alle anzeigen</a>
+        </div>
+        <div class="divide-y divide-gray-50">
+            @forelse($recentChanges as $chg)
+            @php
+                $typeColors = ['standard'=>'gray','normal'=>'blue','emergency'=>'red'];
+                $tc = $typeColors[$chg->type] ?? 'gray';
+                $statusColors = ['draft'=>'gray','submitted'=>'blue','in_progress'=>'indigo','completed'=>'green','cancelled'=>'red'];
+                $sc = $statusColors[$chg->status] ?? 'gray';
+            @endphp
+            <div class="flex items-center justify-between px-5 py-3 gap-3">
+                <div class="min-w-0 flex-1">
+                    <p class="text-sm font-medium text-gray-800 truncate">{{ $chg->title }}</p>
+                    <p class="text-xs text-gray-400 mt-0.5">
+                        {{ $chg->number }}
+                        @if($chg->planned_start_at) · {{ $chg->planned_start_at->format('d.m.Y') }} @endif
+                        · {{ $chg->created_at->diffForHumans() }}
+                    </p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <span class="text-xs px-2 py-0.5 rounded-full bg-{{ $tc }}-100 text-{{ $tc }}-700">{{ $chg->type_label }}</span>
+                    <span class="text-xs px-2 py-0.5 rounded-full bg-{{ $sc }}-100 text-{{ $sc }}-700">{{ $chg->status_label }}</span>
+                </div>
+            </div>
+            @empty
+            <p class="px-5 py-6 text-center text-gray-400 text-sm">Keine Changes vorhanden.</p>
+            @endforelse
+        </div>
     </div>
 </div>
 

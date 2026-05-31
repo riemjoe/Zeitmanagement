@@ -25,7 +25,7 @@
             @php $portalCustomer = \App\Models\Customer::find(session('portal_customer_id')); @endphp
             <p class="text-sm font-semibold text-gray-800 truncate">{{ $portalCustomer?->name }}</p>
         </div>
-        <nav class="flex-1 px-3 py-4 space-y-1">
+        <nav class="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
             <a href="{{ route('portal.dashboard') }}"
                class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors {{ request()->routeIs('portal.dashboard') ? 'active' : '' }}">
                 <i class="ph-bold ph-house-simple text-gray-400"></i> Übersicht
@@ -34,6 +34,10 @@
                class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors {{ request()->routeIs('portal.projects') ? 'active' : '' }}">
                 <i class="ph-bold ph-folder-simple text-gray-400"></i> Projekte
             </a>
+            <a href="{{ route('portal.time-entries') }}"
+               class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors {{ request()->routeIs('portal.time-entries') ? 'active' : '' }}">
+                <i class="ph-bold ph-clock text-gray-400"></i> Zeiteinträge
+            </a>
             <a href="{{ route('portal.tickets') }}"
                class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors {{ request()->routeIs('portal.tickets*') ? 'active' : '' }}">
                 <i class="ph-bold ph-headset text-gray-400"></i> Support-Tickets
@@ -41,6 +45,23 @@
             <a href="{{ route('portal.invoices') }}"
                class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors {{ request()->routeIs('portal.invoices') ? 'active' : '' }}">
                 <i class="ph-bold ph-receipt text-gray-400"></i> Rechnungen
+            </a>
+
+            {{-- ITIL --}}
+            <div class="pt-3 pb-1 px-3">
+                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">ITIL</p>
+            </div>
+            <a href="{{ route('portal.incidents') }}"
+               class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors {{ request()->routeIs('portal.incidents') ? 'active' : '' }}">
+                <i class="ph-bold ph-warning-circle text-gray-400"></i> Incidents
+            </a>
+            <a href="{{ route('portal.problems') }}"
+               class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors {{ request()->routeIs('portal.problems') ? 'active' : '' }}">
+                <i class="ph-bold ph-bug text-gray-400"></i> Problems
+            </a>
+            <a href="{{ route('portal.changes') }}"
+               class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors {{ request()->routeIs('portal.changes') ? 'active' : '' }}">
+                <i class="ph-bold ph-arrows-clockwise text-gray-400"></i> Changes
             </a>
         </nav>
         <div class="px-3 py-4 border-t border-gray-100">
