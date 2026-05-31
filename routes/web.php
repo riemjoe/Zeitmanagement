@@ -38,6 +38,7 @@ use App\Http\Controllers\DunningController;
 use App\Http\Controllers\IncidentController;
 use App\Http\Controllers\ProblemController;
 use App\Http\Controllers\ItilChangeController;
+use App\Http\Controllers\ServiceTaskController;
 use App\Http\Controllers\ItilWebhookController;
 use App\Http\Controllers\LeistungsberichtController;
 use App\Http\Controllers\PublicWebhookController;
@@ -333,6 +334,12 @@ Route::middleware('auth.simple')->prefix('admin')->group(function () {
         Route::delete('/{problem}',                        [ProblemController::class, 'destroy'])->name('destroy');
         Route::post('/{problem}/attach-incident',          [ProblemController::class, 'attachIncident'])->name('attach-incident');
         Route::delete('/{problem}/detach-incident/{incident}', [ProblemController::class, 'detachIncident'])->name('detach-incident');
+    });
+
+    // Service Tasks
+    Route::prefix('itil/service-tasks')->name('itil.service-tasks.')->group(function () {
+        Route::get('/',            [ServiceTaskController::class, 'index'])->name('index');
+        Route::get('/{serviceTask}', [ServiceTaskController::class, 'show'])->name('show');
     });
 
     // Changes

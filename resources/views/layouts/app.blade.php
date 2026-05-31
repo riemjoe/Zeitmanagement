@@ -305,6 +305,7 @@
                     ['label' => 'Helpdesk',         'route' => 'helpdesk.index',       'icon' => 'ph-headset', 'badge' => $openTicketCount],
                     ['label' => 'Bewertungen',      'route' => 'surveys.index',        'icon' => 'ph-star'],
                     // ITIL
+                    ['label' => 'Service Tasks',    'route' => 'itil.service-tasks.index', 'icon' => 'ph-check-square'],
                     ['label' => 'Incidents',        'route' => 'itil.incidents.index', 'icon' => 'ph-fire', 'badge' => $openIncidentCount],
                     ['label' => 'Problems',         'route' => 'itil.problems.index',  'icon' => 'ph-bug'],
                     ['label' => 'Changes',          'route' => 'itil.changes.index',   'icon' => 'ph-arrows-clockwise'],
@@ -322,7 +323,7 @@
                     'Verwaltung'  => ['customers.index', 'projects.index', 'work-categories.index'],
                     'Erfassung'   => ['time-entries.index', 'kanban.index', 'expenses.index', 'quotes.index', 'contracts.index', 'invoices.index'],
                     'Support'     => ['helpdesk.index', 'surveys.index'],
-                    'ITIL'        => ['itil.incidents.index', 'itil.problems.index', 'itil.changes.index'],
+                    'ITIL'        => ['itil.service-tasks.index', 'itil.incidents.index', 'itil.problems.index', 'itil.changes.index'],
                     'System'      => ['automations.index', 'webhooks.index', 'team.index', 'settings.edit', 'export-import.index', 'tests.index'],
                 ];
             @endphp

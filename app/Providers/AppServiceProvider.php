@@ -20,7 +20,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->registerObservers();
         $this->registerAutomationTriggers();
+    }
+
+    private function registerObservers(): void
+    {
+        \App\Models\Task::observe(\App\Observers\TaskObserver::class);
+        \App\Models\MaintenanceEvent::observe(\App\Observers\MaintenanceEventObserver::class);
     }
 
     /**
