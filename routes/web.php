@@ -38,6 +38,7 @@ use App\Http\Controllers\DunningController;
 use App\Http\Controllers\IncidentController;
 use App\Http\Controllers\ProblemController;
 use App\Http\Controllers\ItilChangeController;
+use App\Http\Controllers\ServiceTaskController;
 use App\Http\Controllers\ItilWebhookController;
 use App\Http\Controllers\LeistungsberichtController;
 use App\Http\Controllers\PublicWebhookController;
@@ -77,11 +78,15 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::post('/2fa/verify',  [CustomerPortalController::class, 'verify2fa'])->middleware('throttle:10,5')->name('2fa.verify.post');
 
         // Portal-Hauptseiten
-        Route::get('/dashboard', [CustomerPortalController::class, 'dashboard'])->name('dashboard');
-        Route::get('/projects',  [CustomerPortalController::class, 'projects'])->name('projects');
-        Route::get('/tickets',   [CustomerPortalController::class, 'tickets'])->name('tickets');
+        Route::get('/dashboard',     [CustomerPortalController::class, 'dashboard'])->name('dashboard');
+        Route::get('/projects',      [CustomerPortalController::class, 'projects'])->name('projects');
+        Route::get('/tickets',       [CustomerPortalController::class, 'tickets'])->name('tickets');
         Route::get('/tickets/{ticket}', [CustomerPortalController::class, 'ticket'])->name('ticket');
-        Route::get('/invoices',  [CustomerPortalController::class, 'invoices'])->name('invoices');
+        Route::get('/invoices',      [CustomerPortalController::class, 'invoices'])->name('invoices');
+        Route::get('/incidents',     [CustomerPortalController::class, 'incidents'])->name('incidents');
+        Route::get('/problems',      [CustomerPortalController::class, 'problems'])->name('problems');
+        Route::get('/changes',       [CustomerPortalController::class, 'changes'])->name('changes');
+        Route::get('/time-entries',  [CustomerPortalController::class, 'timeEntries'])->name('time-entries');
     });
 });
 
@@ -329,6 +334,12 @@ Route::middleware('auth.simple')->prefix('admin')->group(function () {
         Route::delete('/{problem}',                        [ProblemController::class, 'destroy'])->name('destroy');
         Route::post('/{problem}/attach-incident',          [ProblemController::class, 'attachIncident'])->name('attach-incident');
         Route::delete('/{problem}/detach-incident/{incident}', [ProblemController::class, 'detachIncident'])->name('detach-incident');
+    });
+
+    // Service Tasks
+    Route::prefix('itil/service-tasks')->name('itil.service-tasks.')->group(function () {
+        Route::get('/',            [ServiceTaskController::class, 'index'])->name('index');
+        Route::get('/{serviceTask}', [ServiceTaskController::class, 'show'])->name('show');
     });
 
     // Changes

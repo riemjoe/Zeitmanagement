@@ -82,6 +82,11 @@
                 <td class="px-5 py-3 text-right space-x-2">
                     <a href="{{ route('itil.problems.show', $problem) }}" class="text-gray-400 hover:text-orange-600 text-xs">Anzeigen</a>
                     <a href="{{ route('itil.problems.edit', $problem) }}" class="text-gray-400 hover:text-orange-600 text-xs">Bearbeiten</a>
+                    <form method="POST" action="{{ route('itil.problems.destroy', $problem) }}" class="inline"
+                          onsubmit="return confirm('Problem {{ $problem->number }} wirklich löschen?')">
+                        @csrf @method('DELETE')
+                        <button class="text-gray-400 hover:text-red-600 text-xs">Löschen</button>
+                    </form>
                 </td>
             </tr>
             @empty
