@@ -291,6 +291,7 @@
                 $openTicketCount     = \App\Models\Ticket::whereIn('status', ['open', 'in_progress'])->count();
                 $overdueInvoiceCount = \App\Models\Invoice::overdue()->count();
                 $openIncidentCount   = \App\Models\Incident::whereIn('status', ['open', 'in_progress'])->count();
+                $pendingApprovalCount = \App\Models\CustomerApproval::where('status', 'pending')->count();
                 $nav = [
                     ['label' => 'Dashboard',       'route' => 'dashboard',            'icon' => 'ph-squares-four'],
                     ['label' => 'Kunden',           'route' => 'customers.index',      'icon' => 'ph-users'],
@@ -301,6 +302,7 @@
                     ['label' => 'Ausgaben',         'route' => 'expenses.index',       'icon' => 'ph-receipt'],
                     ['label' => 'Angebote',         'route' => 'quotes.index',            'icon' => 'ph-file-doc'],
                     ['label' => 'Verträge',         'route' => 'contracts.index',         'icon' => 'ph-files'],
+                    ['label' => 'Kundenfreigaben',  'route' => 'customer-approvals.index','icon' => 'ph-seal-check', 'badge' => $pendingApprovalCount],
                     ['label' => 'Rechnungen',       'route' => 'invoices.index',          'icon' => 'ph-file-text', 'badge' => $overdueInvoiceCount],
                     ['label' => 'Helpdesk',         'route' => 'helpdesk.index',       'icon' => 'ph-headset', 'badge' => $openTicketCount],
                     ['label' => 'Bewertungen',      'route' => 'surveys.index',        'icon' => 'ph-star'],
@@ -321,7 +323,7 @@
                 $groups = [
                     'Übersicht'   => ['dashboard'],
                     'Verwaltung'  => ['customers.index', 'projects.index', 'work-categories.index'],
-                    'Erfassung'   => ['time-entries.index', 'kanban.index', 'expenses.index', 'quotes.index', 'contracts.index', 'invoices.index'],
+                    'Erfassung'   => ['time-entries.index', 'kanban.index', 'expenses.index', 'quotes.index', 'contracts.index', 'customer-approvals.index', 'invoices.index'],
                     'Support'     => ['helpdesk.index', 'surveys.index'],
                     'ITIL'        => ['itil.service-tasks.index', 'itil.incidents.index', 'itil.problems.index', 'itil.changes.index'],
                     'System'      => ['automations.index', 'webhooks.index', 'team.index', 'settings.edit', 'export-import.index', 'tests.index'],

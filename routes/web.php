@@ -43,6 +43,8 @@ use App\Http\Controllers\ItilWebhookController;
 use App\Http\Controllers\LeistungsberichtController;
 use App\Http\Controllers\PublicWebhookController;
 use App\Http\Controllers\WebhookController;
+use App\Http\Controllers\CustomerApprovalController;
+use App\Http\Controllers\CustomerApprovalPublicController;
 
 // ── Authentifizierung (öffentlich) ──────────────────────────────────────────
 Route::get('/login',  [AuthController::class, 'showLogin'])->name('login');
@@ -93,6 +95,11 @@ Route::prefix('portal')->name('portal.')->group(function () {
 // ── Öffentliche Umfragen (kein Login erforderlich) ──────────────────────────
 Route::get('/survey/{token}',  [PublicSurveyController::class, 'show'])->name('survey.show');
 Route::post('/survey/{token}', [PublicSurveyController::class, 'submit'])->name('survey.submit')
+    ->middleware('throttle:20,5');
+
+// ── Öffentliche Kundenfreigaben (kein Login erforderlich) ────────────────────
+Route::get('/freigabe/{token}',  [CustomerApprovalPublicController::class, 'show'])->name('customer-approval.show');
+Route::post('/freigabe/{token}', [CustomerApprovalPublicController::class, 'decide'])->name('customer-approval.decide')
     ->middleware('throttle:20,5');
 
 // ── Automation-Webhooks (öffentlich, Token-gesichert) ────────────────────────
@@ -308,6 +315,10 @@ Route::middleware('auth.simple')->prefix('admin')->group(function () {
     Route::get('/dunning',                              [DunningController::class, 'index'])->name('dunning.index');
     Route::post('/dunning/{invoice}/reminder',          [DunningController::class, 'sendReminder'])->name('dunning.reminder');
     Route::post('/dunning/{invoice}/notice',            [DunningController::class, 'sendDunning'])->name('dunning.notice');
+
+    // Kundenfreigaben
+    Route::post('/customer-approvals/{customerApproval}/resend', [CustomerApprovalController::class, 'resend'])->name('customer-approvals.resend');
+    Route::resource('customer-approvals', CustomerApprovalController::class);
 
     // ── ITIL ──────────────────────────────────────────────────────────────────
 

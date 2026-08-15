@@ -55,6 +55,8 @@ class EmailLog extends Model
             'ticket_waiting_reminder' => 'Erinnerung',
             'maintenance_reminder'    => 'Wartungserinnerung',
             'test_mail'               => 'Test-Mail',
+            'customer_approval_request'  => 'Kundenfreigabe angefragt',
+            'customer_approval_decision' => 'Kundenfreigabe beantwortet',
             default                   => $this->type,
         };
     }

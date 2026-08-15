@@ -69,6 +69,11 @@ class Customer extends Model
         return $this->hasMany(CustomerItilSlaSetting::class);
     }
 
+    public function customerApprovals(): HasMany
+    {
+        return $this->hasMany(CustomerApproval::class);
+    }
+
     /**
      * Vollständige Adresse als String.
      */
