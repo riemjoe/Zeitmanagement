@@ -104,11 +104,17 @@ class DunningController extends Controller
         }
 
         $formattedDate = $newDueDate->format('d.m.Y');
+        $businessEmail = Setting::get('company_email');
 
         try {
-            Mail::to($customerEmail)->send(
-                new DunningMail($invoice, $level, $formattedDate)
-            );
+            $mail = Mail::to($customerEmail);
+
+            // Kopie der Mahnung/Zahlungserinnerung an die Geschäftsmail (CC) senden.
+            if ($businessEmail && $businessEmail !== $customerEmail) {
+                $mail = $mail->cc($businessEmail);
+            }
+
+            $mail->send(new DunningMail($invoice, $level, $formattedDate));
 
             $subject = $level === 0
                 ? "Zahlungserinnerung – {$invoice->invoice_number}"
